@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Projects | Terminal Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="projects">
+  <header class="site-header">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="brand-dot">●</span> terminal<span class="brand-accent">.dev</span>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links">
+        <a href="index.html">~/home</a>
+        <a href="blogs.html">~/blogs</a>
+        <a href="projects.html" class="active">~/projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-container">
+    <section class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title-bar">ls projects/</span>
+      </div>
+      <div class="terminal-body">
+        <h1 class="terminal-title">Projects<span class="cursor">█</span></h1>
+        <p class="section-intro">
+          Projects are defined with Markdown metadata and rendered into a responsive grid.
+        </p>
+        <div id="projects-grid" class="projects-grid">
+          <!-- JS: project cards -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/markdown.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+

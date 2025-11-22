@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Home | Terminal Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+</head>
+<body data-page="home">
+  <header class="site-header">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="brand-dot">●</span> terminal<span class="brand-accent">.dev</span>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links">
+	      <a href="index.html" class="active">~/home</a>
+        <a href="blogs.html">~/blogs</a>
+        <a href="projects.html">~/projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-container">
+    <!-- Hero / Cover -->
+    <section class="hero terminal-window no-header-dots">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+	<span class="terminal-title-bar"><!--~/home--></span>
+      </div>
+      <div class="hero-content">
+        <div class="hero-cover"></div>
+        <div class="hero-main">
+          <div class="profile-wrapper">
+            <div class="profile-image">
+              <!-- Use your own image at /images/profile.png -->
+              <img src="images/profile.jpg" alt="Profile" onerror="this.style.display='none'" />
+              <div class="profile-placeholder" aria-hidden="true">
+                <pre><!--[User]--></pre>
+              </div>
+            </div>
+          </div>
+          <div class="hero-text">
+            <h1 class="terminal-title">
+              <span id="typing-title"></span><span class="cursor">_</span>
+            </h1>
+            <p class="hero-subtitle">
+              <span id="typing-subtitle"></span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- About -->
+    <section class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title-bar">cat about.txt</span>
+      </div>
+      <div class="terminal-body">
+        <h2 class="section-title">About Me</h2>
+        <p>
+		I’m a Linux-driven builder passionate about low-level systems, networking, and C programming. I enjoy understanding how things work beneath the surface — from writing my own TCP servers and DNS server to exploring Linux device drivers and system internals. I use Arch Linux as my main environment and love coding in Vim and ricing my system. I’m currently studying IT at Temasek Polytechnic and constantly pushing myself through real-world projects.
+        </p>
+        <p>
+          When I'm not coding, I'm probably tweaking a dotfile, learning something new, or
+          writing about what I've learned.
+        </p>
+      </div>
+    </section>
+
+    <!-- Projects Preview -->
+    <section class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title-bar">ls projects/ | head -n 2</span>
+      </div>
+      <div class="terminal-body">
+        <div class="section-header-row">
+          <h2 class="section-title">Projects Preview</h2>
+          <a href="projects.html" class="see-more">&gt; see more</a>
+        </div>
+        <div class="cards-grid" id="project-preview-list">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Blogs Preview -->
+    <section class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title-bar">ls blogs/ | head -n 3</span>
+      </div>
+      <div class="terminal-body">
+        <div class="section-header-row">
+          <h2 class="section-title">Latest Blogs</h2>
+          <a href="blogs.html" class="see-more">&gt; see more</a>
+        </div>
+        <div class="blog-preview-list" id="blog-preview-list">
+          <!-- Filled by JS -->
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="js/markdown.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
+

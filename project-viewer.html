@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Project Viewer | Terminal Portfolio</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+
+  <link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/solarized-dark.min.css">
+</head>
+<body data-page="project-viewer">
+  <header class="site-header">
+    <div class="nav-container">
+      <div class="brand">
+        <span class="brand-dot">●</span> terminal<span class="brand-accent">.dev</span>
+      </div>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links">
+        <a href="index.html">~/home</a>
+        <a href="blogs.html">~/blogs</a>
+        <a href="projects.html" class="active">~/projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-container">
+    <section class="terminal-window">
+      <div class="terminal-header">
+        <span class="dot red"></span>
+        <span class="dot amber"></span>
+        <span class="dot green"></span>
+        <span class="terminal-title-bar" id="project-terminal-title">cat project.md</span>
+      </div>
+      <div class="terminal-body">
+        <a href="projects.html" class="back-link">← Back to Projects</a>
+        <article id="project-content" class="markdown-content">
+          <!-- JS-rendered project -->
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="js/markdown.js"></script>
+  <script src="js/main.js"></script>
+
+</body>
+</html>
+
