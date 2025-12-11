@@ -2,7 +2,8 @@
 
 // List of markdown files (you can add more here)
 const BLOG_FILES = [
-  { file: "my-rhcsa-cheatsheet.md"}
+  { file: "my-rhcsa-cheatsheet.md"},
+  { file: "linux-user-mgmt.md"}
 ];
 
 const PROJECT_FILES = [
@@ -284,7 +285,6 @@ async function initBlogsPage() {
 /* ------------------------------------------------------------------ */
 /* Blog Viewer                                                        */
 /* ------------------------------------------------------------------ */
-
 async function initBlogViewer() {
   const file = getQueryParam("file");
   const container = document.getElementById("blog-content");
@@ -300,6 +300,18 @@ async function initBlogViewer() {
     if (titleBar) {
       titleBar.textContent = "cat blogs/" + file;
     }
+
+    // 🆕 Notion-style cover
+    if (meta.cover) {
+      const body = container.parentElement;         // .terminal-body
+      const coverEl = document.createElement("div");
+      coverEl.className = "blog-cover";
+      coverEl.style.backgroundImage = `url('${meta.cover}')`;
+
+      // Insert cover ABOVE the article content
+      body.insertBefore(coverEl, container);
+    }
+
     const html = window.markdownToHtml(content);
     container.innerHTML = `
       <h1>${meta.title || file}</h1>

@@ -1,5 +1,6 @@
 title: My RHCSA Cheatsheet
 image: images/my_rhcsa_cheatsheet/preview.jpg
+cover: images/my_rhcsa_cheatsheet/cover.jpg
 description: A collection of useful command to remember for RHCSA examination
 
 # Basics

@@ -647,7 +647,6 @@ body::before {
 }
 
 /* Make images inside markdown responsive */
-
 .markdown-content img {
   max-width: 100%;     /* never wider than the container */
   max-height: 500px;   /* STOP very tall screenshots */
@@ -657,5 +656,50 @@ body::before {
   display: block;
   margin: 12px auto;
   border-radius: 4px;
+}
+
+
+/* ----------------------------My Custom------------------------------- */
+
+/* General code color tweaks */
+.markdown-content pre code {
+  color: #e0e0e0; /* default text color for code */
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Make all bash snippets a bit more 'terminal-like' */
+.markdown-content pre code.language-bash {
+  /*color: #fff8d9;
+  color: #e8d48d;            soft yellow for commands */
+  color: white;
+}
+
+/* Optional: tweak some highlight.js token colors */
+.hljs-built_in {
+  color: #82aaff;           /* built-ins like echo */
+}
+.hljs-string {
+  color: #c3e88d;           /* strings like "hello" */
+}
+.hljs-keyword {
+  color: #ff5370;           /* keywords like if, for */
+}
+
+/* for inline code */
+.markdown-content code {
+    font-size: 15px;
+}
+
+/* Notion-like blog cover image */
+
+.blog-cover {
+  width: 100%;
+  height: 220px;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 8px;
+  margin-bottom: 18px;
 }
 

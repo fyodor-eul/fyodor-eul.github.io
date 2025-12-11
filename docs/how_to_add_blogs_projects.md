@@ -37,9 +37,9 @@ This is my blog content...
 
 ![Example Image](images/example.png)
 
-```bash
+'''bash
 echo "Hello"
-```
+'''
 ```
 
 ### 4. Add the Markdown file name to `BLOG_FILES`  
