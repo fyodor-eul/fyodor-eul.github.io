@@ -3,7 +3,8 @@
 // List of markdown files (you can add more here)
 const BLOG_FILES = [
   { file: "my-rhcsa-cheatsheet.md"},
-  { file: "linux-user-mgmt.md"}
+  { file: "linux-user-mgmt.md"},
+  { file: "Understanding_ACL_on_Linux.md"}
 ];
 
 const PROJECT_FILES = [
