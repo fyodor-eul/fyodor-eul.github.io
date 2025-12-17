@@ -1,8 +1,7 @@
-# Understanding ACL on Linux
-
 title: Understanding Access Control List on Linux
-image: images/my_rhcsa_cheatsheet/preview.jpg
+image: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 description: A practical guide to POSIX Access Control List.
+cover: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 
 # Table of Contents
 
@@ -47,14 +46,14 @@ Similarly, `group: root` is granted read-only access to the file as defined by `
 
 Since we haven't set any ACL entries, this output directly reflects to that of `ls -l` command.
 
-```bash
+```
 [root@localhost:demo] # ls -l file.txt
 -rw-r--r--. 1 root root 0 Dec 14 13:07 file.txt
 ```
 
 Similarly, the following command demonstrate the ACL entries of the `dir1/` directory.
 
-```bash
+```
 [root@localhost:demo] # getfacl dir1/
 # file: dir1/
 # owner: root
@@ -72,7 +71,7 @@ other::r-x
 
 Alternatively, we can recursively list the ACL entries of a directory and its contents with `-R` flag.
 
-```bash
+```
 [root@localhost:demo] # tree dir1/
 dir1/
 ├── file2.txt
@@ -133,7 +132,7 @@ You can add a new ACL entry using the `setfacl` command with `-m` flag which sta
 
 The following command add an ACL entry for **named user** by granting user `alice` read and write access to `file.txt`.
 
-```bash
+```
 [root@localhost:demo] # setfacl -m user:alice:rw- file.txt
 [root@localhost:demo] # getfacl file.txt
 # file: file.txt
@@ -153,7 +152,7 @@ Here, we can see that a new entry `user:alice:rw-` has been added.
 
 Notice that in the command output of `ls -l`, the last character of the file permission section changes from `.` to `+` meaning that ACL has been applied.
 
-```bash
+```
 # Before the ACL entry is added
 -rw-r--r--. 1 root root 0 Dec 15 18:39 file.txt
 
@@ -165,13 +164,13 @@ Notice that the group permission also changes from read-only (`r--`) to the perm
 
 You can remove this entry using the following command
 
-```bash
+```
 setfacl -x user:alice file.txt
 ```
 
 Alternatively you can remove all the ACL entries and restore the file to its default permission.
 
-```bash
+```
 setfacl -b file.txt
 ```
 
@@ -181,13 +180,13 @@ This command resets the ACL to its base permission state.
 
 You can add an entry for the **named group** in the similar way.
 
-```bash
+```
 setfacl -m group:mgmt:rw- file.txt
 ```
 
 You can also add multiple entries by separating with commas.
 
-```bash
+```
 setfacl -m u:bob:rw-,g:devteam:rw- file.txt
 ```
 
@@ -199,7 +198,7 @@ The mask is automatically created whenever we add a new ACL entry for a certain 
 
 Before adding any ACL entry, there is no line related to the mask exists.
 
-```bash
+```
 [root@localhost:demo] # ls -l test.txt
 -rw-r--r--. 1 root root 0 Dec 15 20:41 test.txt
 [root@localhost:demo] # getfacl test.txt
@@ -213,7 +212,7 @@ other::r--
 
 However, after an ACL entry has been added, the mask entry is automatically added as well.
 
-```bash
+```
 [root@localhost:demo] # setfacl -m u:alice:r-- test.txt
 [root@localhost:demo] # ls -l test.txt
 -rw-r--r--+ 1 root root 0 Dec 15 20:41 test.txt
@@ -232,7 +231,7 @@ You can see that the mask entry `mask::r--` has been added automatically.
 
 Notice that the last character of `ls -l` command changes from `.` to `+` suggesting that the ACL has been applied.
 
-```bash
+```
 # Before ACL
 -rw-r--r--. 1 root root 0 Dec 15 20:41 test.txt
 
@@ -242,7 +241,7 @@ Notice that the last character of `ls -l` command changes from `.` to `+` sugges
 
 Let’s add another ACL entry
 
-```bash
+```
 [root@localhost:demo] # setfacl-rw-r--r--+ 1 root root 0 Dec 15 20:41 test.txt-m u:bob:rw- test.txt
 [root@localhost:demo] # getfacl test.txt
 # file: test.txt
@@ -264,7 +263,7 @@ Since mask is the maximum effective permission, we can observe that its value ch
 
 Besides, by comparing with the previous output of `ls -l` command, you might have noticed that the group permission bits are changed from `r--` to `rw-` as well.
 
-```bash
+```
 # Before ACL
 -rw-r--r--. 1 root root 0 Dec 15 20:41 test.txt
 # r-- corresponds to group::r--
@@ -280,7 +279,7 @@ Besides, by comparing with the previous output of `ls -l` command, you might hav
 
 This is because when no ACL exists, the group permission bits shown by `ls -l` command correspond directly to : 
 
-```bash
+```
 group::r--
 ```
 
@@ -290,7 +289,7 @@ which is displayed from `getfacl test.txt` command.
 
 However, when we add an ACL entry, the group permission bits correspond to the mask entry instead.
 
-```bash
+```
 mask::rw-
 ```
 
@@ -308,7 +307,7 @@ An effective permission is the actual permission that is being applied regardles
 
 Let’s say we have a file called `file1.txt` and we have give the user **boss** read and write access to the file.
 
-```bash
+```
 [root@localhost:demo] # touch file1.txt
 [root@localhost:demo] # setfacl -m u:boss:rw- file1.txt
 [root@localhost:demo] # getfacl file1.txt
@@ -326,7 +325,7 @@ Notice that the mask `mask::rw-` has been added.
 
 Modifying the mask to `mask::r--` will also restrict the permission granted to the user **boss**.
 
-```bash
+```
 [root@localhost:demo] # setfacl -m mask::r file1.txt
 [root@localhost:demo] # getfacl file1.txt
 # file: file1.txt
@@ -345,13 +344,13 @@ This is probably the another thing you can do with the mask since you can restri
 
 You can temporarily lock down all ACL permissions.
 
-```bash
+```
 setfacl -m m::--- test.txt
 ```
 
 Later, you can restore access by correcting the mask
 
-```bash
+```
 setfacl -m m::rw- test.txt
 ```
 
@@ -359,7 +358,7 @@ setfacl -m m::rw- test.txt
 
 You can add an ACL entry on a directory just as in the same way as we did on the files.
 
-```bash
+```
 [root@localhost:demo] # setfacl -m u:bob:rwx dir1/
 [root@localhost:demo] # getfacl dir1/
 # file: dir1/
@@ -376,7 +375,7 @@ other::r-x
 
 However, this won't effect the files and sub directories under it.
 
-```bash
+```
 [root@localhost:demo] # getfacl dir1/sub1/; getfacl dir1/file2.txt
 # file: dir1/sub1/
 # owner: root
@@ -401,7 +400,7 @@ other::r--
 
 In order for our ACL entry to be add to the files and sub directories inside, we need to include `-R` option to enable recursive mode as we have previously done with `getfacl` to retrieve ACL specifications of a directory and its content.
 
-```bash
+```
 [root@localhost:demo] # setfacl -b dir1/
 [root@localhost:demo] # setfacl -Rm u:bob:rwx dir1/
 [root@localhost:demo] # getfacl -R dir1/
@@ -448,7 +447,7 @@ While you recursively give permission to a directory, it is possible that you ac
 
 What will you do if you want to give the user **bob** read-only access to `file1.txt` and `file2.txt`.
 
-```bash
+```
 project/
 ├── file1.txt
 └── notes
@@ -459,13 +458,13 @@ project/
 
 If you did as the following 
 
-```bash
+```
 setfacl -Rm u:bob:r-- project/
 ```
 
 The will prevent bob to `cd` into the `project/` and `notes/` directory since we didn’t give execute permission to directories. And bob will never get to read the files. Therefore, we need to give execute permissions.
 
-```bash
+```
 setfacl -Rm u:bob:r-x project/
 ```
 
@@ -473,7 +472,7 @@ However, doing so will give execute permissions to `file1.txt` and `file2.txt` a
 
 To avoid giving executing permissions to files, you can give execute permission only on directories using capital letter `X` instead.
 
-```bash
+```
 setfacl -Rm u:bob:r-X project/
 ```
 
@@ -487,7 +486,7 @@ However, setting default ACLs on a directory will not have effect on the permiss
 
 The following command is the demonstration of setting a default ACL to a directory tree granting the user `alice` write access to the new files.
 
-```bash
+```
 project/
 ├── file1.txt
 └── notes
@@ -496,16 +495,19 @@ project/
 1 directory, 2 files
 ```
 
-```bash
+```
 [root@localhost:demo] # setfacl -dm u:alice:rw- project/
+```
 
-# Alternativly, we set default ACL as the line below instead of using `-d` flag.
-# setfacl -m default:user:alice:rw- project/
+Alternatively, we set default ACL as the line below instead of using `-d` flag.
+
+```
+[root@localhost:demo] # setfacl -m default:user:alice:rw- project/
 ```
 
 We can verify this by creating a file or directory under `project/` and checking its ACL entries.
 
-```bash
+```
 [root@localhost:demo] # mkdir project/docs
 [root@localhost:demo] # getfacl project/docs/
 # file: project/docs/
@@ -529,7 +531,7 @@ We can see that `user:aclice:rw-` has been added automatically.
 
 However, there is a catch. Even though the default ACL is applied on the newly created directory `docs/`, it won’t applied to the preexisting `notes/` directory unless we do told the `getfacl` to set the default ACL recursively.
 
-```bash
+```
 [root@localhost:dir1] # getfacl -R project/
 # file: project/
 # owner: root
@@ -571,13 +573,13 @@ Here, you can compare the entries for `notes` and `docs`.
 
 To recursively set the default ACL on the directory and its sub-directories. We to set `-R` flag.
 
-```bash
+```
 setfacl -Rdm u:alice:rw- project/
 ```
 
 To remove a default ACL entry, we can use `-x` flag the same way as we did on removing regular ACL entries.
 
-```bash
+```
 setfacl -d -x u:alice project/
 # or alternatively
 setfacl -x d:u:alice project/

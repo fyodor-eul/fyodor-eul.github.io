@@ -556,11 +556,14 @@ body::before {
 }
 
 .markdown-content a {
-  color: var(--accent);
+  /*color: var(--accent);*/
+  color: #4e94bf; /* blue */
 }
 
 .markdown-content code {
-  background: #111;
+  /*background: #111;*/
+  background: #24221f;
+  color: #c76952;
   border-radius: 3px;
   padding: 2px 4px;
   font-size: 0.85em;
@@ -574,11 +577,13 @@ body::before {
   overflow-x: auto;
 }
 
-
 .markdown-content ul {
   padding-left: 18px;
   margin: 0 0 10px;
 }
+
+/* I added this to change to overall font size of the blog post*/
+
 
 /* Back link --------------------------------------------------------------- */
 
@@ -661,10 +666,16 @@ body::before {
 
 /* ----------------------------My Custom------------------------------- */
 
+/* Overall Markdown Font Size */
+.markdown-content {
+  font-size: 18px;
+  line-height: 1.75;
+}
+
 /* General code color tweaks */
 .markdown-content pre code {
   color: #e0e0e0; /* default text color for code */
-  font-size: 15px;
+  font-size: 20px;
   line-height: 1.5;
 }
 
