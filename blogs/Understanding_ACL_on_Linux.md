@@ -66,7 +66,7 @@ other::r-x
 
 ```
 
-> Notice that dir1/ is considered as a file despite being a directory. This is because, a directory, eventually, is treated as a file from the perspective of the Linux kernel. This implies the idea of Everything is a file in Linux (We will discuss more on files in later articles).
+> Notice that `dir1/` is considered as a file despite being a directory. This is because, a directory, eventually, is treated as a file from the perspective of the Linux kernel. This implies the idea of Everything is a file in Linux (We will discuss more on files in later articles).
 > 
 
 Alternatively, we can recursively list the ACL entries of a directory and its contents with `-R` flag.
