@@ -15,10 +15,9 @@ cover: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 
 # Why Access Control List Matters
 
-Traditionally, file and directory permissions in Linux(UNIX) systems are limited to `user`, `group` and `other`, as we all know. However, this becomes very restrictive when we need more granular control over file permissions. For example, we might want to give permissions to a specific user. What do we do if we want to allow access to multiple groups? What do we do if we need to give access to a user who is neither the owner nor a member of the allowed group? This is where **Access Control List (ACL)** comes in. In this article, we will go over the basics of ACLs in Linux systems (***POSIX ACLs - [acl(5)]([https://man7.org/linux/man-pages/man5/acl.5.html](https://man7.org/linux/man-pages/man5/acl.5.html))***) and its practical use cases.
+Traditionally, file and directory permissions in Linux(UNIX) systems are limited to `user`, `group` and `other`, as we all know. However, this becomes very restrictive when we need more granular control over file permissions. For example, we might want to give permissions to a specific user. What do we do if we want to allow access to multiple groups? What do we do if we need to give access to a user who is neither the owner nor a member of the allowed group? This is where **Access Control List (ACL)** comes in. In this article, we will go over the basics of ACLs in Linux systems (***POSIX ACLs - [acl(5)](https://man7.org/linux/man-pages/man5/acl.5.html)***) and its practical use cases.
 
-> Before running any ACL related commands, make sure you have install the required package for your specific linux distribution. For RedHat-based distributions, you can install the `acl` package as follows.
-> 
+Before running any ACL related commands, make sure you have install the required package for your specific linux distribution. For RedHat-based distributions, you can install the `acl` package as follows. 
 
 ```
 dnf install acl
@@ -241,7 +240,9 @@ Notice that the last character of `ls -l` command changes from `.` to `+` sugges
 Let’s add another ACL entry
 
 ```
-[root@localhost:demo] # setfacl-rw-r--r--+ 1 root root 0 Dec 15 20:41 test.txt-m u:bob:rw- test.txt
+[root@localhost:demo] # ls -l test.txt
+-rw-r--r--+ 1 root root 0 Dec 15 20:41 test.txt
+[root@localhost:demo] # setfacl -m u:bob:rw- test.txt
 [root@localhost:demo] # getfacl test.txt
 # file: test.txt
 # owner: root
@@ -608,6 +609,6 @@ In the traditional UNIX permission model, the access to the files and directorie
 From viewing ACL entries to adding them in practice, we observed various ways we can utilize ACL to our advantage. In addition, we gained the high-level overview of how  ACL is related to the traditional UNIX permissions by understanding the ACL masks and comparing `ls -l` outputs with the masks. If you had read this far, you should see how ACL solves a lot of issues that `chown` and `chmod` alone cannot deal with. Although ACL adds complexity, understanding how ACL works and the way it interacts with the traditional permissions is crucial for administering modern Linux systems safely and reliably.
 
 # References
-- [acl(5)]([https://man7.org/linux/man-pages/man5/acl.5.html](https://man7.org/linux/man-pages/man5/acl.5.html)), [getfacl(1)](https://man7.org/linux/man-pages/man1/getfacl.1.html), [setfacl(1)]([https://man7.org/linux/man-pages/man1/setfacl.1.html](https://man7.org/linux/man-pages/man1/setfacl.1.html))
+- [acl(5)](https://man7.org/linux/man-pages/man5/acl.5.html), [getfacl(1)](https://man7.org/linux/man-pages/man1/getfacl.1.html), [setfacl(1)](https://man7.org/linux/man-pages/man1/setfacl.1.html)
 - [How ACL Masks Let You Fine-Tune File Permissions in Linux By Jordan Erickson](https://www.howtogeek.com/how-acl-masks-let-you-fine-tune-file-permissions-in-linux)
 - [What relationships tie ACL mask and standard group permission on a file?](https://unix.stackexchange.com/questions/147499/what-relationships-tie-acl-mask-and-standard-group-permission-on-a-file/147502#147502)
