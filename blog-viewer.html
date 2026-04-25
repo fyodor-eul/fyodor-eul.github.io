@@ -254,29 +254,48 @@
 
     /* ── Mobile ──────────────────────────────────────── */
     @media (max-width: 860px) {
-      html, body { overflow: auto; }
+      /* iOS Safari fix: never lock html/body overflow on mobile */
+      html, body {
+        overflow: auto;
+        height: auto;
+      }
+
       .blog-page {
         position: static;
         display: block;
-        padding: 60px 8px 20px;
+        padding: 58px 8px 20px;
+        min-height: 100vh;
       }
+
       .blog-terminal {
         height: auto;
+        min-height: 0;
         overflow: visible;
       }
+
       .blog-terminal-body {
         flex-direction: column;
         overflow: visible;
+        min-height: 0;
       }
+
       .toc-pane {
         width: 100%;
         flex: none;
-        max-height: 180px;
+        max-height: 160px;
         border-right: none;
         border-bottom: 1px solid #504945;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
       }
+
       .toc-link { width: 100%; max-width: 100%; }
-      .blog-pane { overflow: visible; }
+
+      .blog-pane {
+        overflow: visible;
+        height: auto;
+      }
+
       .blog-pane-inner { padding: 12px 14px 32px; }
     }
   </style>

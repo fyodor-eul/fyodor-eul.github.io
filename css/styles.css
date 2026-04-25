@@ -548,6 +548,7 @@ body::before {
 .markdown-content h2,
 .markdown-content h3 {
   color: var(--accent);
+  scroll-margin-top: 90px; /* clears navbar + back bar on mobile */
 }
 
 .markdown-content h1 { font-size: 1.4rem; }
@@ -696,5 +697,3 @@ body::before {
   margin-bottom: 18px;
 }
 
-/* ── TOC styles live in blog-viewer.html <style> block ─────────── */
-/* (removed from here to avoid conflicting with scoped layout rules) */
