@@ -628,6 +628,16 @@ async function initProjectViewer() {
     console.error(err);
     container.textContent = "Failed to load project: " + err.message;
   }
+
+  const progressBar = document.getElementById("read-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const el = document.documentElement;
+      const total = el.scrollHeight - el.clientHeight;
+      progressBar.style.width = total > 0 ? (el.scrollTop / total * 100) + "%" : "0%";
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+  }
 }
 
 /* ------------------------------------------------------------------ */

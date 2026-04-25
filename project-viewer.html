@@ -8,12 +8,32 @@
 
   <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/solarized-dark.min.css">
+  <style>
+    .nav-back-link {
+      font-size: 0.75rem;
+      color: #a89984;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      transition: color 0.15s;
+      white-space: nowrap;
+    }
+    .nav-back-link:hover { color: #b8bb26; }
+
+    .read-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      width: 0%;
+      background: #b8bb26;
+      transition: width 0.1s linear;
+    }
+  </style>
 </head>
 <body data-page="project-viewer">
   <header class="site-header">
     <div class="nav-container">
       <div class="brand">
-        <span class="brand-dot">●</span> terminal<span class="brand-accent">.dev</span>
+        <a href="projects.html" class="nav-back-link">← Back to Projects</a>
       </div>
       <button class="nav-toggle" aria-label="Toggle navigation">
         <span></span><span></span><span></span>
@@ -24,6 +44,7 @@
         <a href="projects.html" class="active">~/projects</a>
       </nav>
     </div>
+    <div class="read-progress" id="read-progress"></div>
   </header>
 
   <main class="page-container">
@@ -35,7 +56,6 @@
         <span class="terminal-title-bar" id="project-terminal-title">cat project.md</span>
       </div>
       <div class="terminal-body">
-        <a href="projects.html" class="back-link">← Back to Projects</a>
         <article id="project-content" class="markdown-content">
           <!-- JS-rendered project -->
         </article>

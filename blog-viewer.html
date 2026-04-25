@@ -170,16 +170,17 @@
     .lang-switch-track.on::after { content: "🇲🇲"; transform: translateX(24px); }
     .lang-switch-track.on { border-color: #b8bb26; }
 
-    /* ── Sticky back-bar ────────────────────────────── */
-    .blog-back-bar {
-      flex-shrink: 0;
-      position: relative;
-      display: flex;
-      align-items: center;
-      padding: 5px 14px;
-      border-bottom: 1px solid #3c3836;
-      background: #1d2021;
+    /* ── Navbar back-link & progress bar ───────────── */
+    .nav-back-link {
+      font-size: 0.75rem;
+      color: #a89984;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      transition: color 0.15s;
+      white-space: nowrap;
     }
+
+    .nav-back-link:hover { color: #b8bb26; }
 
     .read-progress {
       position: absolute;
@@ -189,16 +190,6 @@
       background: #b8bb26;
       transition: width 0.1s linear;
     }
-
-    .blog-back-bar .back-link {
-      font-size: 0.75rem;
-      color: #a89984;
-      text-decoration: none;
-      letter-spacing: 0.03em;
-      transition: color 0.15s;
-    }
-
-    .blog-back-bar .back-link:hover { color: #b8bb26; }
 
     /* ═══════════════════════════════════════════════════
        DESKTOP — fixed layout, only blog-pane scrolls
@@ -269,7 +260,7 @@
   <header class="site-header">
     <div class="nav-container">
       <div class="brand">
-        <span class="brand-dot">●</span> terminal<span class="brand-accent">.dev</span>
+        <a href="blogs.html" class="nav-back-link">← Back to Blogs</a>
       </div>
       <button class="nav-toggle" aria-label="Toggle navigation">
         <span></span><span></span><span></span>
@@ -280,6 +271,7 @@
         <a href="projects.html">~/projects</a>
       </nav>
     </div>
+    <div class="read-progress" id="read-progress"></div>
   </header>
 
   <!-- flat div, not inside .page-container -->
@@ -297,12 +289,6 @@
           <div class="lang-switch-track" id="lang-switch-track"></div>
           <span class="lang-switch-label" id="lang-label-mm">မြ</span>
         </div>
-      </div>
-
-      <!-- Sticky back bar -->
-      <div class="blog-back-bar">
-        <a href="blogs.html" class="back-link">← Back to Blogs</a>
-        <div class="read-progress" id="read-progress"></div>
       </div>
 
       <!-- Two-pane body -->
