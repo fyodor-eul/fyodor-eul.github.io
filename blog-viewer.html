@@ -9,12 +9,13 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css">
   <style>
 
-    /* ── Lock the viewport — no outer scroll ─────────── */
-    html, body {
-      height: 100%;
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
+    /* ── Desktop only: lock viewport so only blog-pane scrolls ── */
+    /* NEVER set overflow:hidden on html/body without a min-width guard —
+       iOS Safari cannot recover from it and the page won't scroll at all */
+    html, body { margin: 0; padding: 0; }
+
+    @media (min-width: 861px) {
+      html, body { height: 100%; overflow: hidden; }
     }
 
     /* ── Navbar stays fixed as usual via styles.css ──── */
@@ -254,31 +255,22 @@
 
     /* ── Mobile ──────────────────────────────────────── */
     @media (max-width: 860px) {
-      /* iOS Safari fix: never lock html/body overflow on mobile */
-      html, body {
-        overflow: auto;
-        height: auto;
-      }
-
+      /* html/body overflow is already unlocked by the desktop-only guard above */
       .blog-page {
         position: static;
         display: block;
         padding: 58px 8px 20px;
         min-height: 100vh;
       }
-
       .blog-terminal {
         height: auto;
         min-height: 0;
         overflow: visible;
       }
-
       .blog-terminal-body {
         flex-direction: column;
         overflow: visible;
-        min-height: 0;
       }
-
       .toc-pane {
         width: 100%;
         flex: none;
@@ -288,14 +280,8 @@
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
       }
-
       .toc-link { width: 100%; max-width: 100%; }
-
-      .blog-pane {
-        overflow: visible;
-        height: auto;
-      }
-
+      .blog-pane { overflow: visible; height: auto; }
       .blog-pane-inner { padding: 12px 14px 32px; }
     }
   </style>
