@@ -495,7 +495,14 @@ function buildTOC(contentEl) {
       const activeLink = tocNav.querySelector(`a[href="#${id}"]`);
       if (activeLink) {
         activeLink.classList.add("active");
-        activeLink.scrollIntoView({ block: "nearest" });
+        // Scroll only within the TOC nav, never the window
+        const linkTop = activeLink.offsetTop;
+        const linkBottom = linkTop + activeLink.offsetHeight;
+        if (linkTop < tocNav.scrollTop) {
+          tocNav.scrollTop = linkTop;
+        } else if (linkBottom > tocNav.scrollTop + tocNav.clientHeight) {
+          tocNav.scrollTop = linkBottom - tocNav.clientHeight;
+        }
       }
     },
     {
