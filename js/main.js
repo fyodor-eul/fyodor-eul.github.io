@@ -458,27 +458,18 @@ function buildTOC(contentEl) {
     link.href = "#" + heading.id;
     link.textContent = heading.textContent;
 
-    // Smooth scroll — desktop scrolls blog-pane div, mobile scrolls window
+    // Smooth scroll — desktop scrolls blog-pane div, mobile uses scrollIntoView
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const pane = document.getElementById("blog-pane");
       const isMobile = window.innerWidth <= 860;
 
       if (!isMobile && pane && pane.scrollHeight > pane.clientHeight) {
-        // Desktop: heading position relative to pane's current scroll position
         const paneRect = pane.getBoundingClientRect();
         const headingRect = heading.getBoundingClientRect();
         pane.scrollBy({ top: headingRect.top - paneRect.top - 20, behavior: "smooth" });
       } else {
-        // Mobile: walk offsetParent chain to get true document-absolute top,
-        // then subtract sticky navbar (48px) + back bar (32px) + small gap (10px)
-        let absoluteTop = 0;
-        let el = heading;
-        while (el) {
-          absoluteTop += el.offsetTop;
-          el = el.offsetParent;
-        }
-        window.scrollTo({ top: absoluteTop - 90, behavior: "smooth" });
+        heading.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     });
 
