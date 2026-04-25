@@ -457,6 +457,7 @@ function buildTOC(contentEl) {
     link.className = `toc-link depth-${depth}`;
     link.href = "#" + heading.id;
     link.textContent = heading.textContent;
+    link.title = heading.textContent;
 
     // Smooth scroll — desktop scrolls blog-pane div, mobile uses scrollIntoView
     link.addEventListener("click", (e) => {

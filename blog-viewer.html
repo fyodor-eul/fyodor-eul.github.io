@@ -47,14 +47,9 @@
       flex-direction: column;   /* stack TOC above content on mobile */
     }
 
-    /* TOC: fixed height, scrollable on mobile */
+    /* TOC: hidden on mobile */
     .toc-pane {
-      display: flex;
-      flex-direction: column;
-      border-bottom: 1px solid #504945;
-      max-height: 160px;
-      overflow-y: auto;
-      -webkit-overflow-scrolling: touch;
+      display: none;
     }
 
     .toc-pane-header {
@@ -92,9 +87,8 @@
       border-left: 2px solid transparent;
       line-height: 1.5;
       transition: color 0.15s, border-color 0.15s, background 0.15s;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      word-break: break-word;
+      overflow-wrap: anywhere;
     }
 
     .toc-link:hover {
@@ -225,6 +219,8 @@
       }
 
       .toc-pane {
+        display: flex;
+        flex-direction: column;
         width: 220px;
         flex: 0 0 220px;
         max-height: none;
@@ -239,7 +235,7 @@
         overflow-y: auto;
       }
 
-      .toc-link { width: 220px; max-width: 220px; }
+      .toc-link { width: 220px; max-width: 220px; box-sizing: border-box; }
 
       .blog-pane {
         flex: 1;
