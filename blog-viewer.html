@@ -21,16 +21,26 @@
     /* ── Navbar stays fixed as usual via styles.css ──── */
 
     /* ── Full-height wrapper below navbar ────────────── */
+    /* Mobile-first: static flow so iOS Safari can scroll naturally */
     .blog-page {
-      position: fixed;
-      top: 48px;          /* exact navbar height */
-      left: 0;
-      right: 0;
-      bottom: 0;
-      padding: 10px 12px 12px;
-      box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      padding: 58px 8px 20px;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    /* Desktop: switch to fixed so only blog-pane scrolls */
+    @media (min-width: 861px) {
+      .blog-page {
+        position: fixed;
+        top: 48px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 10px 12px 12px;
+        min-height: unset;
+      }
     }
 
     /* ── Terminal window: fills the wrapper ─────────── */
@@ -42,7 +52,12 @@
       background: var(--bg-alt);
       border: 1px solid #504945;
       border-radius: 8px;
-      overflow: hidden;    /* clip rounded corners */
+    }
+
+    @media (min-width: 861px) {
+      .blog-terminal {
+        overflow: hidden;  /* clip rounded corners — desktop only */
+      }
     }
 
     /* terminal chrome row */
@@ -56,7 +71,12 @@
       min-height: 0;
       display: flex;
       flex-direction: row;
-      overflow: hidden;
+    }
+
+    @media (min-width: 861px) {
+      .blog-terminal-body {
+        overflow: hidden;
+      }
     }
 
     /* ══ LEFT: TOC ══════════════════════════════════════ */
@@ -255,21 +275,8 @@
 
     /* ── Mobile ──────────────────────────────────────── */
     @media (max-width: 860px) {
-      /* html/body overflow is already unlocked by the desktop-only guard above */
-      .blog-page {
-        position: static;
-        display: block;
-        padding: 58px 8px 20px;
-        min-height: 100vh;
-      }
-      .blog-terminal {
-        height: auto;
-        min-height: 0;
-        overflow: visible;
-      }
       .blog-terminal-body {
         flex-direction: column;
-        overflow: visible;
       }
       .toc-pane {
         width: 100%;
