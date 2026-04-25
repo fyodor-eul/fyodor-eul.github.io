@@ -1,16 +1,20 @@
 /* Global Theme ------------------------------------------------------------ */
 
 :root {
-  --bg: #0e0e0e;
-  --bg-alt: #141414;
-  --text: #e0e0e0;
-  --muted: #aaaaaa;
-  --accent: #ffffff;                      /* was #00ff84 */
-  --accent-soft: rgba(255, 255, 255, 0.3);/* no real glow now, just mild */
-  --border: #ffffff;                      /* was green */
-  --danger: #ff5f56;
-  --warning: #ffbd2e;
-  --success: #27c93f;
+  --bg: #282828;
+  --bg-alt: #1d2021;
+  --bg-soft: #32302f;
+  --bg1: #3c3836;
+  --text: #ebdbb2;
+  --muted: #a89984;
+  --accent: #9e9e9e; /*#b8bb26;*/                      /* gruvbox green */
+  --accent-soft: rgba(184, 187, 38, 0.2);
+  --border: #504945;
+  --danger: #cc241d;
+  --warning: #d79921;
+  --success: #98971a;
+  --blue: #83a598;
+  --purple: #d3869b;
   --radius: 8px;
   --font-mono: "Fira Code", "JetBrains Mono", Menlo, Monaco, Consolas, "Courier New", monospace;
 }
@@ -43,8 +47,8 @@ body::before {
   inset: 0;
   background: repeating-linear-gradient(
     to bottom,
-    rgba(255, 255, 255, 0.03),
-    rgba(255, 255, 255, 0.03) 1px,
+    rgba(235, 219, 178, 0.03),
+    rgba(235, 219, 178, 0.03) 1px,
     transparent 1px,
     transparent 3px
   );
@@ -70,8 +74,8 @@ body::before {
   left: 0;
   right: 0;
   z-index: 10;
-  background: rgba(14, 14, 14, 0.95);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3); /* was green-ish */
+  background: rgba(29, 32, 33, 0.95);
+  border-bottom: 1px solid var(--border);
   backdrop-filter: blur(8px);
 }
 
@@ -143,7 +147,7 @@ body::before {
 .nav-toggle {
   display: none;
   background: none;
-  border: 1px solid rgba(0, 255, 132, 0.5);
+  border: 1px solid rgba(184, 187, 38, 0.5);
   border-radius: 4px;
   padding: 6px;
   cursor: pointer;
@@ -173,17 +177,16 @@ body::before {
 .terminal-window {
   background: var(--bg-alt);
   border-radius: var(--radius);
-  border: 1px solid #9e9e9e;
+  border: 1px solid var(--border);
 }
-
 
 .terminal-header {
   display: flex;
   align-items: center;
   gap: 6px;
   padding: 6px 12px;
-  background: #090909;
-  border-bottom: 1px solid #9e9e9e;
+  background: #1d2021;
+  border-bottom: 1px solid var(--border);
   font-size: 0.75rem;
   color: var(--muted);
 }
@@ -195,9 +198,9 @@ body::before {
   display: inline-block;
 }
 
-.dot.red { background: var(--danger); }
-.dot.amber { background: var(--warning); }
-.dot.green { background: var(--success); }
+.dot.red    { background: var(--danger); }
+.dot.amber  { background: var(--warning); }
+.dot.green  { background: var(--success); }
 
 .terminal-title-bar {
   margin-left: 8px;
@@ -240,8 +243,8 @@ body::before {
 }
 
 @keyframes blink {
-  0%, 50% { opacity: 1; }
-  50.01%, 100% { opacity: 0; }
+  0%, 50%       { opacity: 1; }
+  50.01%, 100%  { opacity: 0; }
 }
 
 /* Hero -------------------------------------------------------------------- */
@@ -252,7 +255,7 @@ body::before {
 
 .hero-cover {
   height: 120px;
-  background: linear-gradient(90deg, #00ff84 0%, #00c2ff 40%, #8a2be2 100%);
+  background: linear-gradient(90deg, #b8bb26 0%, #83a598 40%, #d3869b 100%);
   opacity: 0.25;
 }
 
@@ -275,7 +278,7 @@ body::before {
   margin-top: -55px;
   border: 2px solid var(--accent);
   overflow: hidden;
-  background: #050505;
+  background: #282828;
 }
 
 .profile-image img {
@@ -340,8 +343,8 @@ body::before {
 }
 
 .card {
-  background: #111;
-  border: 1px solid #9e9e9e;
+  background: var(--bg-soft);
+  border: 1px solid var(--border);
   border-radius: 6px;
   padding: 10px;
   display: flex;
@@ -360,7 +363,7 @@ body::before {
   height: 64px;
   border-radius: 4px;
   overflow: hidden;
-  background: #050505;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -398,9 +401,9 @@ body::before {
 }
 
 .project-card {
-  background: #111;
+  background: var(--bg-soft);
   border-radius: 6px;
-  border: 1px solid #9e9e9e;
+  border: 1px solid var(--border);
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -419,7 +422,7 @@ body::before {
   height: 120px;
   border-radius: 4px;
   overflow: hidden;
-  background: #050505;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -464,9 +467,9 @@ body::before {
 .playlist-item {
   display: flex;
   gap: 12px;
-  background: #111;
+  background: var(--bg-soft);
   border-radius: 6px;
-  border: 1px solid #9e9e9e;
+  border: 1px solid var(--border);
   padding: 8px;
   cursor: pointer;
   transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
@@ -482,7 +485,7 @@ body::before {
   height: 70px;
   border-radius: 4px;
   overflow: hidden;
-  background: #050505;
+  background: var(--bg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -556,24 +559,22 @@ body::before {
 }
 
 .markdown-content a {
-  /*color: var(--accent);*/
-  color: #4e94bf; /* blue */
+  color: var(--blue);
 }
 
 .markdown-content code {
-  /*background: #111;*/
-  background: #24221f;
-  color: #c76952;
+  background: var(--bg1);
+  color: #fb4934;               /* gruvbox bright red */
   border-radius: 3px;
   padding: 2px 4px;
   font-size: 0.85em;
 }
 
 .markdown-content pre {
-  background: #050505;
+  background: var(--bg-alt);
   padding: 0px;
   border-radius: 10px;
-  border: none;         /* ✨ No border, no glow */
+  border: none;
   overflow-x: auto;
 }
 
@@ -581,9 +582,6 @@ body::before {
   padding-left: 18px;
   margin: 0 0 10px;
 }
-
-/* I added this to change to overall font size of the blog post*/
-
 
 /* Back link --------------------------------------------------------------- */
 
@@ -593,10 +591,6 @@ body::before {
   font-size: 0.85rem;
   color: var(--accent);
   text-decoration: none;
-}
-
-.back-link:hover {
-  /*text-shadow: 0 0 8px var(--accent-soft);*/
 }
 
 /* Responsive -------------------------------------------------------------- */
@@ -617,11 +611,11 @@ body::before {
     top: 100%;
     right: 0;
     left: 0;
-    background: #0b0b0b;
+    background: var(--bg-alt);
     flex-direction: column;
     padding: 8px 16px 10px;
     display: none;
-    border-bottom: 1px solid rgba(0, 255, 132, 0.3);
+    border-bottom: 1px solid rgba(184, 187, 38, 0.3);
   }
 
   .nav-links.open {
@@ -653,16 +647,15 @@ body::before {
 
 /* Make images inside markdown responsive */
 .markdown-content img {
-  max-width: 100%;     /* never wider than the container */
-  max-height: 500px;   /* STOP very tall screenshots */
+  max-width: 100%;
+  max-height: 500px;
   width: auto;
   height: auto;
-  object-fit: contain; /* Resize nicely without cropping */
+  object-fit: contain;
   display: block;
   margin: 12px auto;
   border-radius: 4px;
 }
-
 
 /* ----------------------------My Custom------------------------------- */
 
@@ -674,36 +667,33 @@ body::before {
 
 /* General code color tweaks */
 .markdown-content pre code {
-  color: #e0e0e0; /* default text color for code */
+  color: #ebdbb2;               /* gruvbox fg */
   font-size: 20px;
   line-height: 1.5;
 }
 
-/* Make all bash snippets a bit more 'terminal-like' */
+/* Bash snippets */
 .markdown-content pre code.language-bash {
-  /*color: #fff8d9;
-  color: #e8d48d;            soft yellow for commands */
-  color: white;
+  color: #ebdbb2;
 }
 
-/* Optional: tweak some highlight.js token colors */
+/* highlight.js token overrides */
 .hljs-built_in {
-  color: #82aaff;           /* built-ins like echo */
+  color: #83a598;               /* gruvbox blue */
 }
 .hljs-string {
-  color: #c3e88d;           /* strings like "hello" */
+  color: #b8bb26;               /* gruvbox green */
 }
 .hljs-keyword {
-  color: #ff5370;           /* keywords like if, for */
+  color: #fb4934;               /* gruvbox bright red */
 }
 
 /* for inline code */
 .markdown-content code {
-    font-size: 15px;
+  font-size: 15px;
 }
 
 /* Notion-like blog cover image */
-
 .blog-cover {
   width: 100%;
   height: 220px;
