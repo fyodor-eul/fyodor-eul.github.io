@@ -458,22 +458,27 @@ function buildTOC(contentEl) {
     link.href = "#" + heading.id;
     link.textContent = heading.textContent;
 
-    // Smooth scroll — desktop uses blog-pane container, mobile uses window
+    // Smooth scroll — desktop scrolls blog-pane div, mobile scrolls window
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const pane = document.getElementById("blog-pane");
       const isMobile = window.innerWidth <= 860;
 
       if (!isMobile && pane && pane.scrollHeight > pane.clientHeight) {
-        // Desktop: scroll inside the fixed-height blog-pane div
-        const paneTop = pane.getBoundingClientRect().top;
-        const headingTop = heading.getBoundingClientRect().top;
-        pane.scrollBy({ top: headingTop - paneTop - 20, behavior: "smooth" });
+        // Desktop: heading position relative to pane's current scroll position
+        const paneRect = pane.getBoundingClientRect();
+        const headingRect = heading.getBoundingClientRect();
+        pane.scrollBy({ top: headingRect.top - paneRect.top - 20, behavior: "smooth" });
       } else {
-        // Mobile: page itself scrolls, account for sticky navbar (~48px) + back bar (~32px)
-        const offset = 90;
-        const headingTop = heading.getBoundingClientRect().top + window.scrollY - offset;
-        window.scrollTo({ top: headingTop, behavior: "smooth" });
+        // Mobile: walk offsetParent chain to get true document-absolute top,
+        // then subtract sticky navbar (48px) + back bar (32px) + small gap (10px)
+        let absoluteTop = 0;
+        let el = heading;
+        while (el) {
+          absoluteTop += el.offsetTop;
+          el = el.offsetParent;
+        }
+        window.scrollTo({ top: absoluteTop - 90, behavior: "smooth" });
       }
     });
 
