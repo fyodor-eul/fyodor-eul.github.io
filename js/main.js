@@ -458,33 +458,38 @@ function buildTOC(contentEl) {
     link.href = "#" + heading.id;
     link.textContent = heading.textContent;
 
-    // Smooth scroll inside the blog-pane container
+    // Smooth scroll — desktop uses blog-pane container, mobile uses window
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const pane = document.getElementById("blog-pane");
-      if (pane) {
+      const isMobile = window.innerWidth <= 860;
+
+      if (!isMobile && pane && pane.scrollHeight > pane.clientHeight) {
+        // Desktop: scroll inside the fixed-height blog-pane div
         const paneTop = pane.getBoundingClientRect().top;
         const headingTop = heading.getBoundingClientRect().top;
         pane.scrollBy({ top: headingTop - paneTop - 20, behavior: "smooth" });
       } else {
-        heading.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Mobile: page itself scrolls, account for sticky navbar (~48px) + back bar (~32px)
+        const offset = 90;
+        const headingTop = heading.getBoundingClientRect().top + window.scrollY - offset;
+        window.scrollTo({ top: headingTop, behavior: "smooth" });
       }
     });
 
     tocNav.appendChild(link);
   });
 
-  // Scroll spy — watch the blog-pane div (its own scroll container)
+  // Scroll spy — desktop watches blog-pane div, mobile watches viewport
   const tocLinks = tocNav.querySelectorAll(".toc-link");
   const blogPane = document.getElementById("blog-pane");
+  const isMobile = () => window.innerWidth <= 860;
 
   const observer = new IntersectionObserver(
     (entries) => {
-      // Find the topmost intersecting heading
       const visible = entries.filter(e => e.isIntersecting);
       if (visible.length === 0) return;
 
-      // Pick the one closest to the top of the pane
       const top = visible.reduce((a, b) =>
         a.boundingClientRect.top < b.boundingClientRect.top ? a : b
       );
@@ -498,8 +503,7 @@ function buildTOC(contentEl) {
       }
     },
     {
-      // Use the blog-pane div as the scroll root
-      root: blogPane,
+      root: isMobile() ? null : blogPane,
       rootMargin: "-60px 0px -70% 0px",
       threshold: 0,
     }
