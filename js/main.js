@@ -286,51 +286,122 @@ async function initBlogsPage() {
 /* ------------------------------------------------------------------ */
 /* Blog Viewer                                                        */
 /* ------------------------------------------------------------------ */
-async function initBlogViewer() {
-  const file = getQueryParam("file");
-  const container = document.getElementById("blog-content");
-  const titleBar = document.getElementById("blog-terminal-title");
+// ── helpers for language toggle ──────────────────────────────────
 
-  if (!file || !container) {
+function getAltFile(file) {
+  // English → Burmese: foo.md → foo.mm.md
+  // Burmese → English: foo.mm.md → foo.md
+  if (file.endsWith(".mm.md")) {
+    return file.replace(/\.mm\.md$/, ".md");
+  }
+  return file.replace(/\.md$/, ".mm.md");
+}
+
+function isBurmese(file) {
+  return file.endsWith(".mm.md");
+}
+
+// ── render a blog file into the page ─────────────────────────────
+
+async function renderBlog(file) {
+  const container = document.getElementById("blog-content");
+  const titleBar  = document.getElementById("blog-terminal-title");
+  if (!container) return;
+
+  // Remove any existing cover so it doesn't duplicate on re-render
+  const oldCover = container.parentElement.querySelector(".blog-cover");
+  if (oldCover) oldCover.remove();
+
+  // Clear old TOC
+  const tocNav = document.getElementById("toc-nav");
+  if (tocNav) tocNav.innerHTML = "";
+
+  const { meta, content } = await fetchMarkdownWithMeta("blogs/" + file);
+
+  if (titleBar) titleBar.textContent = "cat blogs/" + file;
+
+  // Cover image
+  if (meta.cover) {
+    const pane = container.parentElement;
+    const coverEl = document.createElement("div");
+    coverEl.className = "blog-cover";
+    coverEl.style.backgroundImage = `url('${meta.cover}')`;
+    pane.insertBefore(coverEl, container);
+  }
+
+  const html = window.markdownToHtml(content);
+  container.innerHTML = `
+    <h1>${meta.title || file}</h1>
+    ${meta.description ? `<p><em>${meta.description}</em></p>` : ""}
+    ${html}
+  `;
+
+  if (window.hljs) {
+    container.querySelectorAll("pre code").forEach((block) => {
+      window.hljs.highlightElement(block);
+    });
+  }
+
+  buildTOC(container);
+}
+
+// ── main entry point ──────────────────────────────────────────────
+
+async function initBlogViewer() {
+  const baseFile = getQueryParam("file");
+  const container = document.getElementById("blog-content");
+
+  if (!baseFile || !container) {
     if (container) container.textContent = "No blog file specified.";
     return;
   }
 
+  // Track current language state
+  let currentFile = baseFile;
+
   try {
-    const { meta, content } = await fetchMarkdownWithMeta("blogs/" + file);
-    if (titleBar) {
-      titleBar.textContent = "cat blogs/" + file;
-    }
-
-    // Notion-style cover
-    if (meta.cover) {
-      const body = container.parentElement;
-      const coverEl = document.createElement("div");
-      coverEl.className = "blog-cover";
-      coverEl.style.backgroundImage = `url('${meta.cover}')`;
-      body.insertBefore(coverEl, container);
-    }
-
-    const html = window.markdownToHtml(content);
-    container.innerHTML = `
-      <h1>${meta.title || file}</h1>
-      ${meta.description ? `<p><em>${meta.description}</em></p>` : ""}
-      ${html}
-    `;
-
-    // Highlight code blocks
-    if (window.hljs) {
-      container.querySelectorAll("pre code").forEach((block) => {
-        window.hljs.highlightElement(block);
-      });
-    }
-
-    // Build TOC after content is rendered
-    buildTOC(container);
-
+    await renderBlog(currentFile);
   } catch (err) {
     console.error(err);
     container.textContent = "Failed to load blog: " + err.message;
+    return;
+  }
+
+  // ── Language toggle setup ─────────────────────────────────────
+  const langBtn = document.getElementById("lang-toggle");
+  if (!langBtn) return;
+
+  // Check if the alternate language file exists
+  const altFile = getAltFile(baseFile);
+  try {
+    const probe = await fetch("blogs/" + altFile, { method: "HEAD" });
+    if (probe.ok) {
+      // Alternate exists — show the button
+      langBtn.style.display = "inline-block";
+      langBtn.textContent = isBurmese(currentFile) ? "EN" : "မြ";
+      langBtn.classList.toggle("active-mm", isBurmese(currentFile));
+
+      langBtn.addEventListener("click", async () => {
+        // Swap file
+        currentFile = getAltFile(currentFile);
+        langBtn.textContent = isBurmese(currentFile) ? "EN" : "မြ";
+        langBtn.classList.toggle("active-mm", isBurmese(currentFile));
+
+        // Scroll blog pane back to top
+        const pane = document.getElementById("blog-pane");
+        if (pane) pane.scrollTop = 0;
+
+        try {
+          await renderBlog(currentFile);
+        } catch (err) {
+          console.error(err);
+          container.textContent = "Failed to load: " + err.message;
+        }
+      });
+    }
+    // If probe fails (404), button stays hidden
+  } catch (_) {
+    // Network error — keep button hidden
   }
 }
 

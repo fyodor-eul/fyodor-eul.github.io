@@ -158,6 +158,84 @@
       max-width: 900px;
     }
 
+    /* ── Language toggle switch ─────────────────────── */
+    .lang-switch {
+      margin-left: auto;
+      flex-shrink: 0;
+      display: none;               /* shown by JS when alt file exists */
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .lang-switch-label {
+      font-size: 0.68rem;
+      color: #a89984;
+      font-family: var(--font-mono);
+      letter-spacing: 0.05em;
+      transition: color 0.2s;
+      min-width: 18px;
+      text-align: center;
+    }
+
+    .lang-switch-label.active {
+      color: #ebdbb2;
+    }
+
+    /* the track */
+    .lang-switch-track {
+      position: relative;
+      width: 36px;
+      height: 18px;
+      border-radius: 9px;
+      background: #504945;
+      transition: background 0.25s;
+      flex-shrink: 0;
+    }
+
+    .lang-switch-track.on {
+      background: #b8bb26;
+    }
+
+    /* the thumb (circle) */
+    .lang-switch-track::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #ebdbb2;
+      transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+    }
+
+    .lang-switch-track.on::after {
+      transform: translateX(18px);
+    }
+
+    /* ── Sticky back-bar ─────────────────────────────── */
+    .blog-back-bar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 5px 14px;
+      border-bottom: 1px solid #3c3836;
+      background: #1d2021;
+    }
+
+    .blog-back-bar .back-link {
+      font-size: 0.75rem;
+      color: #a89984;
+      text-decoration: none;
+      letter-spacing: 0.03em;
+      transition: color 0.15s;
+    }
+
+    .blog-back-bar .back-link:hover { color: #b8bb26; }
+
     /* ── Mobile ──────────────────────────────────────── */
     @media (max-width: 860px) {
       html, body { overflow: auto; }
@@ -215,6 +293,16 @@
         <span class="dot amber"></span>
         <span class="dot green"></span>
         <span class="terminal-title-bar" id="blog-terminal-title">cat blog.md</span>
+        <div id="lang-toggle" class="lang-switch" role="switch" aria-checked="false">
+          <span class="lang-switch-label active" id="lang-label-en">EN</span>
+          <div class="lang-switch-track" id="lang-switch-track"></div>
+          <span class="lang-switch-label" id="lang-label-mm">မြ</span>
+        </div>
+      </div>
+
+      <!-- Sticky back bar -->
+      <div class="blog-back-bar">
+        <a href="blogs.html" class="back-link">← Back to Blogs</a>
       </div>
 
       <!-- Two-pane body -->
@@ -233,7 +321,6 @@
         <!-- RIGHT: Blog -->
         <div class="blog-pane" id="blog-pane">
           <div class="blog-pane-inner">
-            <a href="blogs.html" class="back-link">← Back to Blogs</a>
             <article id="blog-content" class="markdown-content">
               <!-- JS-rendered blog -->
             </article>
