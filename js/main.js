@@ -302,14 +302,12 @@ async function initBlogViewer() {
       titleBar.textContent = "cat blogs/" + file;
     }
 
-    // 🆕 Notion-style cover
+    // Notion-style cover
     if (meta.cover) {
-      const body = container.parentElement;         // .terminal-body
+      const body = container.parentElement;
       const coverEl = document.createElement("div");
       coverEl.className = "blog-cover";
       coverEl.style.backgroundImage = `url('${meta.cover}')`;
-
-      // Insert cover ABOVE the article content
       body.insertBefore(coverEl, container);
     }
 
@@ -320,17 +318,115 @@ async function initBlogViewer() {
       ${html}
     `;
 
-    // Highlight code blocks if highlight.js is available
+    // Highlight code blocks
     if (window.hljs) {
       container.querySelectorAll("pre code").forEach((block) => {
         window.hljs.highlightElement(block);
       });
     }
 
+    // Build TOC after content is rendered
+    buildTOC(container);
+
   } catch (err) {
     console.error(err);
     container.textContent = "Failed to load blog: " + err.message;
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Table of Contents                                                  */
+/* ------------------------------------------------------------------ */
+
+function buildTOC(contentEl) {
+  const tocNav = document.getElementById("toc-nav");
+  if (!tocNav) return;
+
+  // Grab all headings from the rendered blog content
+  const headings = contentEl.querySelectorAll("h1, h2, h3");
+  if (headings.length === 0) {
+    // Hide sidebar if no headings
+    const sidebar = document.getElementById("toc-sidebar");
+    if (sidebar) sidebar.style.display = "none";
+    return;
+  }
+
+  // Give each heading a unique id so we can link to it
+  const slugCount = {};
+  headings.forEach((heading) => {
+    let slug = heading.textContent
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")   // strip special chars
+      .trim()
+      .replace(/\s+/g, "-");           // spaces to dashes
+
+    // Handle duplicate headings
+    if (slugCount[slug] !== undefined) {
+      slugCount[slug]++;
+      slug = slug + "-" + slugCount[slug];
+    } else {
+      slugCount[slug] = 0;
+    }
+
+    heading.id = slug;
+  });
+
+  // Build TOC links
+  headings.forEach((heading) => {
+    const depth = parseInt(heading.tagName[1]); // 1, 2, or 3
+    const link = document.createElement("a");
+    link.className = `toc-link depth-${depth}`;
+    link.href = "#" + heading.id;
+    link.textContent = heading.textContent;
+
+    // Smooth scroll inside the blog-pane container
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pane = document.getElementById("blog-pane");
+      if (pane) {
+        const paneTop = pane.getBoundingClientRect().top;
+        const headingTop = heading.getBoundingClientRect().top;
+        pane.scrollBy({ top: headingTop - paneTop - 20, behavior: "smooth" });
+      } else {
+        heading.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    tocNav.appendChild(link);
+  });
+
+  // Scroll spy — watch the blog-pane div (its own scroll container)
+  const tocLinks = tocNav.querySelectorAll(".toc-link");
+  const blogPane = document.getElementById("blog-pane");
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      // Find the topmost intersecting heading
+      const visible = entries.filter(e => e.isIntersecting);
+      if (visible.length === 0) return;
+
+      // Pick the one closest to the top of the pane
+      const top = visible.reduce((a, b) =>
+        a.boundingClientRect.top < b.boundingClientRect.top ? a : b
+      );
+
+      tocLinks.forEach((l) => l.classList.remove("active"));
+      const id = top.target.id;
+      const activeLink = tocNav.querySelector(`a[href="#${id}"]`);
+      if (activeLink) {
+        activeLink.classList.add("active");
+        activeLink.scrollIntoView({ block: "nearest" });
+      }
+    },
+    {
+      // Use the blog-pane div as the scroll root
+      root: blogPane,
+      rootMargin: "-60px 0px -70% 0px",
+      threshold: 0,
+    }
+  );
+
+  headings.forEach((h) => observer.observe(h));
 }
 
 /* ------------------------------------------------------------------ */
@@ -446,4 +542,3 @@ function createAsciiPlaceholder(label) {
   wrap.appendChild(pre);
   return wrap;
 }
-

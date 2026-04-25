@@ -6,9 +6,189 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/solarized-dark.min.css">
+      href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css">
+  <style>
+
+    /* ── Lock the viewport — no outer scroll ─────────── */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* ── Navbar stays fixed as usual via styles.css ──── */
+
+    /* ── Full-height wrapper below navbar ────────────── */
+    .blog-page {
+      position: fixed;
+      top: 48px;          /* exact navbar height */
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 10px 12px 12px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Terminal window: fills the wrapper ─────────── */
+    .blog-terminal {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-alt);
+      border: 1px solid #504945;
+      border-radius: 8px;
+      overflow: hidden;    /* clip rounded corners */
+    }
+
+    /* terminal chrome row */
+    .blog-terminal > .terminal-header {
+      flex-shrink: 0;
+    }
+
+    /* ── Two-pane row ────────────────────────────────── */
+    .blog-terminal-body {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: row;
+      overflow: hidden;
+    }
+
+    /* ══ LEFT: TOC ══════════════════════════════════════ */
+    .toc-pane {
+      /* fixed width — nothing can change this */
+      width: 220px;
+      flex: 0 0 220px;
+      min-width: 0;
+
+      /* own flex column so header stays, list scrolls */
+      display: flex;
+      flex-direction: column;
+
+      border-right: 1px solid #504945;
+
+      /* do NOT put overflow here — let children own it */
+    }
+
+    .toc-pane-header {
+      flex-shrink: 0;
+      padding: 7px 12px;
+      font-size: 0.68rem;
+      color: #a89984;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-bottom: 1px solid #3c3836;
+      background: #141617;
+    }
+
+    .toc-pane-header span { color: #b8bb26; }
+
+    /* THE scrollable list — this is the only thing that scrolls */
+    .toc-nav {
+      flex: 1;             /* take all remaining height in the pane */
+      min-height: 0;       /* allow shrinking below content size */
+      overflow-y: auto;    /* scroll when content overflows */
+      overflow-x: hidden;
+      padding: 4px 0;
+      scrollbar-width: thin;
+      scrollbar-color: #504945 transparent;
+    }
+
+    .toc-nav::-webkit-scrollbar       { width: 4px; }
+    .toc-nav::-webkit-scrollbar-track { background: transparent; }
+    .toc-nav::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+
+    /* each TOC link */
+    .toc-link {
+      display: block;
+      /* constrain to pane width — never wider */
+      width: 220px;
+      max-width: 220px;
+      box-sizing: border-box;
+
+      padding: 3px 10px;
+      font-size: 0.74rem;
+      color: #a89984;
+      text-decoration: none;
+      border-left: 2px solid transparent;
+      line-height: 1.5;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+
+      /* truncate long names */
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .toc-link:hover {
+      color: #ebdbb2;
+      background: rgba(184, 187, 38, 0.06);
+    }
+
+    .toc-link.depth-1 { color: #ebdbb2; padding-left: 10px; font-size: 0.76rem; }
+    .toc-link.depth-2 { padding-left: 20px; }
+    .toc-link.depth-3 { padding-left: 30px; font-size: 0.70rem; color: #928374; }
+
+    .toc-link.active {
+      color: #b8bb26;
+      border-left-color: #b8bb26;
+      background: rgba(184, 187, 38, 0.08);
+    }
+
+    /* ══ RIGHT: blog pane ════════════════════════════════ */
+    .blog-pane {
+      flex: 1;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      scrollbar-color: #504945 transparent;
+    }
+
+    .blog-pane::-webkit-scrollbar       { width: 5px; }
+    .blog-pane::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+
+    .blog-pane-inner {
+      padding: 14px 28px 40px;
+      max-width: 900px;
+    }
+
+    /* ── Mobile ──────────────────────────────────────── */
+    @media (max-width: 860px) {
+      html, body { overflow: auto; }
+      .blog-page {
+        position: static;
+        display: block;
+        padding: 60px 8px 20px;
+      }
+      .blog-terminal {
+        height: auto;
+        overflow: visible;
+      }
+      .blog-terminal-body {
+        flex-direction: column;
+        overflow: visible;
+      }
+      .toc-pane {
+        width: 100%;
+        flex: none;
+        max-height: 180px;
+        border-right: none;
+        border-bottom: 1px solid #504945;
+      }
+      .toc-link { width: 100%; max-width: 100%; }
+      .blog-pane { overflow: visible; }
+      .blog-pane-inner { padding: 12px 14px 32px; }
+    }
+  </style>
 </head>
 <body data-page="blog-viewer">
+
   <header class="site-header">
     <div class="nav-container">
       <div class="brand">
@@ -25,31 +205,47 @@
     </div>
   </header>
 
-  <main class="page-container">
-    <section class="terminal-window">
+  <!-- flat div, not inside .page-container -->
+  <div class="blog-page">
+    <div class="blog-terminal">
+
+      <!-- Terminal chrome -->
       <div class="terminal-header">
         <span class="dot red"></span>
         <span class="dot amber"></span>
         <span class="dot green"></span>
         <span class="terminal-title-bar" id="blog-terminal-title">cat blog.md</span>
       </div>
-      <div class="terminal-body">
-        <a href="blogs.html" class="back-link">← Back to Blogs</a>
-        <article id="blog-content" class="markdown-content">
-          <!-- JS-rendered blog -->
-        </article>
+
+      <!-- Two-pane body -->
+      <div class="blog-terminal-body">
+
+        <!-- LEFT: TOC -->
+        <div class="toc-pane" id="toc-sidebar">
+          <div class="toc-pane-header">
+            <span>~/</span> contents
+          </div>
+          <nav class="toc-nav" id="toc-nav">
+            <!-- JS fills this -->
+          </nav>
+        </div>
+
+        <!-- RIGHT: Blog -->
+        <div class="blog-pane" id="blog-pane">
+          <div class="blog-pane-inner">
+            <a href="blogs.html" class="back-link">← Back to Blogs</a>
+            <article id="blog-content" class="markdown-content">
+              <!-- JS-rendered blog -->
+            </article>
+          </div>
+        </div>
+
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
-  <!-- highlight.js FIRST -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-
-  <!-- your scripts LAST -->
   <script src="js/markdown.js"></script>
   <script src="js/main.js"></script>
-
-
 </body>
 </html>
-
