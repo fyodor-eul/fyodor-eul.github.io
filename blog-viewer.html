@@ -9,90 +9,52 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css">
   <style>
 
-    /* ── Desktop only: lock viewport so only blog-pane scrolls ── */
-    /* NEVER set overflow:hidden on html/body without a min-width guard —
-       iOS Safari cannot recover from it and the page won't scroll at all */
-    html, body { margin: 0; padding: 0; }
+    /* ═══════════════════════════════════════════════════
+       MOBILE FIRST — window scrolls, nothing is locked
+       Desktop overrides go inside @media (min-width:861px)
+       ═══════════════════════════════════════════════════ */
 
-    @media (min-width: 861px) {
-      html, body { height: 100%; overflow: hidden; }
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
-    /* ── Navbar stays fixed as usual via styles.css ──── */
-
-    /* ── Full-height wrapper below navbar ────────────── */
-    /* Mobile-first: static flow so iOS Safari can scroll naturally */
+    /* ── Mobile layout: normal document flow ─────────── */
     .blog-page {
-      display: flex;
-      flex-direction: column;
-      padding: 58px 8px 20px;
-      min-height: 100vh;
+      padding-top: 58px;   /* clear fixed navbar */
       box-sizing: border-box;
     }
 
-    /* Desktop: switch to fixed so only blog-pane scrolls */
-    @media (min-width: 861px) {
-      .blog-page {
-        position: fixed;
-        top: 48px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 10px 12px 12px;
-        min-height: unset;
-      }
+    .blog-pane {
+      touch-action: pan-y;
     }
 
-    /* ── Terminal window: fills the wrapper ─────────── */
     .blog-terminal {
-      flex: 1;
-      min-height: 0;
       display: flex;
       flex-direction: column;
       background: var(--bg-alt);
       border: 1px solid #504945;
       border-radius: 8px;
+      margin: 8px;
     }
 
-    @media (min-width: 861px) {
-      .blog-terminal {
-        overflow: hidden;  /* clip rounded corners — desktop only */
-      }
-    }
+    .blog-terminal > .terminal-header { flex-shrink: 0; }
 
-    /* terminal chrome row */
-    .blog-terminal > .terminal-header {
-      flex-shrink: 0;
-    }
-
-    /* ── Two-pane row ────────────────────────────────── */
     .blog-terminal-body {
-      flex: 1;
-      min-height: 0;
       display: flex;
-      flex-direction: row;
+      flex-direction: column;   /* stack TOC above content on mobile */
     }
 
-    @media (min-width: 861px) {
-      .blog-terminal-body {
-        overflow: hidden;
-      }
-    }
-
-    /* ══ LEFT: TOC ══════════════════════════════════════ */
+    /* TOC: fixed height, scrollable on mobile */
     .toc-pane {
-      /* fixed width — nothing can change this */
-      width: 220px;
-      flex: 0 0 220px;
-      min-width: 0;
-
-      /* own flex column so header stays, list scrolls */
       display: flex;
       flex-direction: column;
-
-      border-right: 1px solid #504945;
-
-      /* do NOT put overflow here — let children own it */
+      border-bottom: 1px solid #504945;
+      max-height: 160px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .toc-pane-header {
@@ -108,11 +70,8 @@
 
     .toc-pane-header span { color: #b8bb26; }
 
-    /* THE scrollable list — this is the only thing that scrolls */
     .toc-nav {
-      flex: 1;             /* take all remaining height in the pane */
-      min-height: 0;       /* allow shrinking below content size */
-      overflow-y: auto;    /* scroll when content overflows */
+      overflow-y: auto;
       overflow-x: hidden;
       padding: 4px 0;
       scrollbar-width: thin;
@@ -123,14 +82,9 @@
     .toc-nav::-webkit-scrollbar-track { background: transparent; }
     .toc-nav::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
 
-    /* each TOC link */
     .toc-link {
       display: block;
-      /* constrain to pane width — never wider */
-      width: 220px;
-      max-width: 220px;
       box-sizing: border-box;
-
       padding: 3px 10px;
       font-size: 0.74rem;
       color: #a89984;
@@ -138,8 +92,6 @@
       border-left: 2px solid transparent;
       line-height: 1.5;
       transition: color 0.15s, border-color 0.15s, background 0.15s;
-
-      /* truncate long names */
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -160,30 +112,19 @@
       background: rgba(184, 187, 38, 0.08);
     }
 
-    /* ══ RIGHT: blog pane ════════════════════════════════ */
-    .blog-pane {
-      flex: 1;
-      min-width: 0;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
-      scrollbar-width: thin;
-      scrollbar-color: #504945 transparent;
-    }
-
-    .blog-pane::-webkit-scrollbar       { width: 5px; }
-    .blog-pane::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+    /* Blog content: natural flow on mobile, window scrolls */
+    .blog-pane { display: block; }
 
     .blog-pane-inner {
-      padding: 14px 28px 40px;
+      padding: 12px 14px 40px;
       max-width: 900px;
     }
 
-    /* ── Language toggle switch ─────────────────────── */
+    /* ── Language toggle ────────────────────────────── */
     .lang-switch {
       margin-left: auto;
       flex-shrink: 0;
-      display: none;               /* shown by JS when alt file exists */
+      display: none;
       align-items: center;
       gap: 8px;
       cursor: pointer;
@@ -201,33 +142,25 @@
       text-align: center;
     }
 
-    .lang-switch-label.active {
-      color: #ebdbb2;
-    }
+    .lang-switch-label.active { color: #ebdbb2; }
 
-    /* the track — inset neumorphic groove */
     .lang-switch-track {
       position: relative;
       width: 52px;
       height: 28px;
       border-radius: 14px;
       background: #1d2021;
-      box-shadow:
-        inset 0 2px 5px rgba(0,0,0,0.6),
-        inset 0 -1px 2px rgba(255,255,255,0.04);
+      box-shadow: inset 0 2px 5px rgba(0,0,0,0.6), inset 0 -1px 2px rgba(255,255,255,0.04);
       border: 1px solid #3c3836;
       transition: border-color 0.25s;
       flex-shrink: 0;
     }
 
-    /* flag emoji thumb */
     .lang-switch-track::after {
       content: "🇬🇧";
       position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 22px;
-      height: 22px;
+      top: 2px; left: 2px;
+      width: 22px; height: 22px;
       border-radius: 50%;
       background: #3c3836;
       display: flex;
@@ -236,24 +169,14 @@
       font-size: 14px;
       line-height: 22px;
       text-align: center;
-      box-shadow:
-        0 2px 6px rgba(0,0,0,0.5),
-        0 1px 2px rgba(0,0,0,0.4);
-      transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1),
-                  content 0s;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.5), 0 1px 2px rgba(0,0,0,0.4);
+      transition: transform 0.28s cubic-bezier(0.34, 1.4, 0.64, 1);
     }
 
-    /* Myanmar flag when toggled on */
-    .lang-switch-track.on::after {
-      content: "🇲🇲";
-      transform: translateX(24px);
-    }
+    .lang-switch-track.on::after { content: "🇲🇲"; transform: translateX(24px); }
+    .lang-switch-track.on { border-color: #b8bb26; }
 
-    .lang-switch-track.on {
-      border-color: #b8bb26;
-    }
-
-    /* ── Sticky back-bar ─────────────────────────────── */
+    /* ── Sticky back-bar ────────────────────────────── */
     .blog-back-bar {
       flex-shrink: 0;
       display: flex;
@@ -273,23 +196,65 @@
 
     .blog-back-bar .back-link:hover { color: #b8bb26; }
 
-    /* ── Mobile ──────────────────────────────────────── */
-    @media (max-width: 860px) {
-      .blog-terminal-body {
+    /* ═══════════════════════════════════════════════════
+       DESKTOP — fixed layout, only blog-pane scrolls
+       ═══════════════════════════════════════════════════ */
+    @media (min-width: 861px) {
+      html, body { height: 100%; overflow: hidden; }
+
+      .blog-page {
+        position: fixed;
+        top: 48px; left: 0; right: 0; bottom: 0;
+        padding: 10px 12px 12px;
+        display: flex;
         flex-direction: column;
       }
-      .toc-pane {
-        width: 100%;
-        flex: none;
-        max-height: 160px;
-        border-right: none;
-        border-bottom: 1px solid #504945;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
+
+      .blog-terminal {
+        flex: 1;
+        min-height: 0;
+        margin: 0;
+        overflow: hidden;
       }
-      .toc-link { width: 100%; max-width: 100%; }
-      .blog-pane { overflow: visible; height: auto; }
-      .blog-pane-inner { padding: 12px 14px 32px; }
+
+      .blog-terminal-body {
+        flex: 1;
+        min-height: 0;
+        flex-direction: row;
+        overflow: hidden;
+      }
+
+      .toc-pane {
+        width: 220px;
+        flex: 0 0 220px;
+        max-height: none;
+        overflow-y: visible;
+        border-bottom: none;
+        border-right: 1px solid #504945;
+      }
+
+      .toc-nav {
+        flex: 1;
+        min-height: 0;
+        overflow-y: auto;
+      }
+
+      .toc-link { width: 220px; max-width: 220px; }
+
+      .blog-pane {
+        flex: 1;
+        min-width: 0;
+        min-height: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #504945 transparent;
+      }
+
+      .blog-pane::-webkit-scrollbar       { width: 5px; }
+      .blog-pane::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+
+      .blog-pane-inner { padding: 14px 28px 40px; }
     }
   </style>
 </head>
