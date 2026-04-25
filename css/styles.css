@@ -567,7 +567,7 @@ body::before {
   color: #fb4934;               /* gruvbox bright red */
   border-radius: 3px;
   padding: 2px 4px;
-  font-size: 0.85em;
+  font-size: 0.50em;
 }
 
 .markdown-content pre {
@@ -668,7 +668,7 @@ body::before {
 /* General code color tweaks */
 .markdown-content pre code {
   color: #ebdbb2;               /* gruvbox fg */
-  font-size: 20px;
+  font-size: 15px;
   line-height: 1.5;
 }
 
