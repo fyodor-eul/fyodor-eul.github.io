@@ -377,15 +377,23 @@ async function initBlogViewer() {
     const probe = await fetch("blogs/" + altFile, { method: "HEAD" });
     if (probe.ok) {
       // Alternate exists — show the button
-      langBtn.style.display = "inline-block";
-      langBtn.textContent = isBurmese(currentFile) ? "EN" : "မြ";
-      langBtn.classList.toggle("active-mm", isBurmese(currentFile));
+      const track = document.getElementById("lang-switch-track");
+      const labelEn = document.getElementById("lang-label-en");
+      const labelMm = document.getElementById("lang-label-mm");
+
+      function updateToggleUI() {
+        const mm = isBurmese(currentFile);
+        if (track) track.classList.toggle("on", mm);
+        if (labelEn) labelEn.classList.toggle("active", !mm);
+        if (labelMm) labelMm.classList.toggle("active", mm);
+      }
+
+      langBtn.style.display = "flex";
+      updateToggleUI();
 
       langBtn.addEventListener("click", async () => {
-        // Swap file
         currentFile = getAltFile(currentFile);
-        langBtn.textContent = isBurmese(currentFile) ? "EN" : "မြ";
-        langBtn.classList.toggle("active-mm", isBurmese(currentFile));
+        updateToggleUI();
 
         // Scroll blog pane back to top
         const pane = document.getElementById("blog-pane");
