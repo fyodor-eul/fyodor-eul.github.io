@@ -514,6 +514,19 @@ function buildTOC(contentEl) {
   );
 
   headings.forEach((h) => observer.observe(h));
+
+  // Reading progress bar
+  const progressBar = document.getElementById("read-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const scroller = isMobile() ? document.documentElement : blogPane;
+      const scrolled = scroller.scrollTop;
+      const total = scroller.scrollHeight - scroller.clientHeight;
+      progressBar.style.width = total > 0 ? (scrolled / total * 100) + "%" : "0%";
+    };
+    blogPane.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("scroll", updateProgress, { passive: true });
+  }
 }
 
 /* ------------------------------------------------------------------ */

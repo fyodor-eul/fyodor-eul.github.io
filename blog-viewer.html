@@ -173,11 +173,21 @@
     /* ── Sticky back-bar ────────────────────────────── */
     .blog-back-bar {
       flex-shrink: 0;
+      position: relative;
       display: flex;
       align-items: center;
       padding: 5px 14px;
       border-bottom: 1px solid #3c3836;
       background: #1d2021;
+    }
+
+    .read-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      width: 0%;
+      background: #b8bb26;
+      transition: width 0.1s linear;
     }
 
     .blog-back-bar .back-link {
@@ -292,6 +302,7 @@
       <!-- Sticky back bar -->
       <div class="blog-back-bar">
         <a href="blogs.html" class="back-link">← Back to Blogs</a>
+        <div class="read-progress" id="read-progress"></div>
       </div>
 
       <!-- Two-pane body -->
