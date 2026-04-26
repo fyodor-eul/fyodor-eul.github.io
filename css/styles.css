@@ -684,6 +684,14 @@ body::before {
 
 .hljs-comment { color: #ebdbb2 !important; }
 
+.nav-cursor { color: #fabd2f !important; }
+.nav-links a.nav-cursor::after { width: 100%; background: #fabd2f; }
+
+.playlist-item.list-cursor {
+  border-color: #fabd2f;
+  transform: translateY(-2px);
+}
+
 /* for inline code */
 .markdown-content code {
   font-size: 15px;

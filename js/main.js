@@ -648,12 +648,29 @@ async function initProjectViewer() {
 function initVimKeys() {
   let lastKey = null;
   let lastKeyTime = 0;
-  let focusedPanel = "content"; // "content" | "toc" | "nav"
+  let focusedPanel = "content"; // "content" | "toc" | "nav" | "list"
   let tocCursorIndex = -1;
   let navCursorIndex = -1;
+  let listCursorIndex = -1;
 
   function getTocLinks() {
     return Array.from(document.querySelectorAll("#toc-nav .toc-link"));
+  }
+
+  function getListItems() {
+    return Array.from(document.querySelectorAll("#blogs-list .playlist-item"));
+  }
+
+  function setListCursor(index) {
+    const items = getListItems();
+    items.forEach((item, i) => item.classList.toggle("list-cursor", i === index));
+    listCursorIndex = index;
+    if (items[index]) items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function focusList() {
+    focusedPanel = "list";
+    setListCursor(0);
   }
 
   function getNavItems() {
@@ -702,6 +719,8 @@ function initVimKeys() {
     tocCursorIndex = -1;
     getNavItems().forEach(item => item.classList.remove("nav-cursor"));
     navCursorIndex = -1;
+    getListItems().forEach(item => item.classList.remove("list-cursor"));
+    listCursorIndex = -1;
     focusedPanel = "content";
   }
 
@@ -710,6 +729,8 @@ function initVimKeys() {
     if (tocPane) tocPane.classList.remove("toc-focused");
     getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
     tocCursorIndex = -1;
+    getListItems().forEach(item => item.classList.remove("list-cursor"));
+    listCursorIndex = -1;
     focusedPanel = "nav";
     setNavCursor(0);
   }
@@ -732,6 +753,22 @@ function initVimKeys() {
         case "j": focusContent();                                                   break;
         case "Enter":
           if (items[navCursorIndex]) items[navCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── List mode (blogs page) ────────────────────────────────────────
+    if (focusedPanel === "list") {
+      const items = getListItems();
+      switch (e.key) {
+        case "j":      setListCursor(Math.min(listCursorIndex + 1, items.length - 1)); break;
+        case "k":      setListCursor(Math.max(listCursorIndex - 1, 0));                break;
+        case "Escape": focusNav();                                                     break;
+        case "Enter":
+          if (items[listCursorIndex]) items[listCursorIndex].click();
           break;
         default: return;
       }
@@ -764,6 +801,12 @@ function initVimKeys() {
 
     // ── Content mode ──────────────────────────────────────────────────
     if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
+
+    if (e.key === "j" && document.body.dataset.page === "blogs") {
+      const items = getListItems();
+      if (items.length > 0) { focusList(); e.preventDefault(); }
+      return;
+    }
 
     const pane = document.getElementById("blog-pane");
     const usePane = pane && window.innerWidth > 860;
