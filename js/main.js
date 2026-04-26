@@ -655,10 +655,12 @@ async function initProjectViewer() {
 function initVimKeys() {
   let lastKey = null;
   let lastKeyTime = 0;
-  let focusedPanel = "content"; // "content" | "toc" | "nav" | "list"
+  let focusedPanel = "content"; // "content" | "toc" | "nav" | "list" | "home"
   let tocCursorIndex = -1;
   let navCursorIndex = -1;
   let listCursorIndex = -1;
+  let homeCursorIndex = -1;
+  let homeSection = null; // "projects" | "blogs"
 
   function getTocLinks() {
     return Array.from(document.querySelectorAll("#toc-nav .toc-link"));
@@ -668,6 +670,27 @@ function initVimKeys() {
     return Array.from(document.querySelectorAll(
       "#blogs-list .playlist-item, #projects-grid .project-card"
     ));
+  }
+
+  function getHomeItems(section) {
+    const sel = section === "projects"
+      ? "#project-preview-list .card"
+      : "#blog-preview-list .playlist-item";
+    return Array.from(document.querySelectorAll(sel));
+  }
+
+  function setHomeCursor(index) {
+    const items = getHomeItems(homeSection);
+    items.forEach((item, i) => item.classList.toggle("list-cursor", i === index));
+    homeCursorIndex = index;
+    if (items[index]) items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function focusHomeSection(section) {
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeSection = section;
+    focusedPanel = "home";
+    setHomeCursor(0);
   }
 
   function getGridCols(items) {
@@ -741,6 +764,8 @@ function initVimKeys() {
     navCursorIndex = -1;
     getListItems().forEach(item => item.classList.remove("list-cursor"));
     listCursorIndex = -1;
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeCursorIndex = -1;
     focusedPanel = "content";
   }
 
@@ -751,6 +776,8 @@ function initVimKeys() {
     tocCursorIndex = -1;
     getListItems().forEach(item => item.classList.remove("list-cursor"));
     listCursorIndex = -1;
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeCursorIndex = -1;
     focusedPanel = "nav";
     setNavCursor(0);
   }
@@ -773,6 +800,31 @@ function initVimKeys() {
         case "j": focusContent();                                                   break;
         case "Enter":
           if (items[navCursorIndex]) items[navCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── Home section mode ─────────────────────────────────────────────
+    if (focusedPanel === "home") {
+      const items = getHomeItems(homeSection);
+      const cols = getGridCols(items);
+      switch (e.key) {
+        case "j":      setHomeCursor(Math.min(homeCursorIndex + cols, items.length - 1)); break;
+        case "k":      setHomeCursor(Math.max(homeCursorIndex - cols, 0));                break;
+        case "l":
+          if ((homeCursorIndex + 1) % cols !== 0 && homeCursorIndex + 1 < items.length)
+            setHomeCursor(homeCursorIndex + 1);
+          break;
+        case "h":
+          if (homeCursorIndex % cols !== 0)
+            setHomeCursor(homeCursorIndex - 1);
+          break;
+        case "Escape": focusContent();                                                    break;
+        case "Enter":
+          if (items[homeCursorIndex]) items[homeCursorIndex].click();
           break;
         default: return;
       }
@@ -830,6 +882,11 @@ function initVimKeys() {
 
     // ── Content mode ──────────────────────────────────────────────────
     if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
+
+    if (document.body.dataset.page === "home") {
+      if (e.key === "p") { const it = getHomeItems("projects"); if (it.length) { focusHomeSection("projects"); e.preventDefault(); } return; }
+      if (e.key === "b") { const it = getHomeItems("blogs");    if (it.length) { focusHomeSection("blogs");    e.preventDefault(); } return; }
+    }
 
     if (e.key === "j" && (document.body.dataset.page === "blogs" || document.body.dataset.page === "projects")) {
       const items = getListItems();
