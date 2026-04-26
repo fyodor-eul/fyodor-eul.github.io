@@ -658,7 +658,20 @@ function initVimKeys() {
   }
 
   function getListItems() {
-    return Array.from(document.querySelectorAll("#blogs-list .playlist-item"));
+    return Array.from(document.querySelectorAll(
+      "#blogs-list .playlist-item, #projects-grid .project-card"
+    ));
+  }
+
+  function getGridCols(items) {
+    if (items.length < 2) return 1;
+    const firstTop = items[0].getBoundingClientRect().top;
+    let cols = 1;
+    for (let i = 1; i < items.length; i++) {
+      if (Math.abs(items[i].getBoundingClientRect().top - firstTop) < 5) cols++;
+      else break;
+    }
+    return cols;
   }
 
   function setListCursor(index) {
@@ -760,13 +773,22 @@ function initVimKeys() {
       return;
     }
 
-    // ── List mode (blogs page) ────────────────────────────────────────
+    // ── List mode ─────────────────────────────────────────────────────
     if (focusedPanel === "list") {
       const items = getListItems();
+      const cols = getGridCols(items);
       switch (e.key) {
-        case "j":      setListCursor(Math.min(listCursorIndex + 1, items.length - 1)); break;
-        case "k":      setListCursor(Math.max(listCursorIndex - 1, 0));                break;
-        case "Escape": focusNav();                                                     break;
+        case "j":      setListCursor(Math.min(listCursorIndex + cols, items.length - 1)); break;
+        case "k":      setListCursor(Math.max(listCursorIndex - cols, 0));                break;
+        case "l":
+          if ((listCursorIndex + 1) % cols !== 0 && listCursorIndex + 1 < items.length)
+            setListCursor(listCursorIndex + 1);
+          break;
+        case "h":
+          if (listCursorIndex % cols !== 0)
+            setListCursor(listCursorIndex - 1);
+          break;
+        case "Escape": focusNav();                                                        break;
         case "Enter":
           if (items[listCursorIndex]) items[listCursorIndex].click();
           break;
@@ -802,7 +824,7 @@ function initVimKeys() {
     // ── Content mode ──────────────────────────────────────────────────
     if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
 
-    if (e.key === "j" && document.body.dataset.page === "blogs") {
+    if (e.key === "j" && (document.body.dataset.page === "blogs" || document.body.dataset.page === "projects")) {
       const items = getListItems();
       if (items.length > 0) { focusList(); e.preventDefault(); }
       return;

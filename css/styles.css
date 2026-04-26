@@ -687,7 +687,8 @@ body::before {
 .nav-cursor { color: #fabd2f !important; }
 .nav-links a.nav-cursor::after { width: 100%; background: #fabd2f; }
 
-.playlist-item.list-cursor {
+.playlist-item.list-cursor,
+.project-card.list-cursor {
   border-color: #fabd2f;
   transform: translateY(-2px);
 }
