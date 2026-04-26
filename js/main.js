@@ -282,6 +282,7 @@ async function initBlogsPage() {
       console.error(err);
     }
   }
+  initBlogListSearch();
 }
 
 /* ------------------------------------------------------------------ */
@@ -308,6 +309,11 @@ async function renderBlog(file) {
   const container = document.getElementById("blog-content");
   const titleBar  = document.getElementById("blog-terminal-title");
   if (!container) return;
+
+  // Clear any active search highlights before replacing content
+  container.querySelectorAll("mark.search-match").forEach(m => {
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
 
   // Remove any existing cover so it doesn't duplicate on re-render
   const oldCover = container.parentElement.querySelector(".blog-cover");
@@ -372,6 +378,8 @@ async function initBlogViewer() {
     container.textContent = "Failed to load blog: " + err.message;
     return;
   }
+
+  initBlogContentSearch();
 
   // ── Language toggle setup ─────────────────────────────────────
   const langBtn = document.getElementById("lang-toggle");
@@ -603,6 +611,7 @@ async function initProjectsPage() {
       console.error(err);
     }
   }
+  initProjectListSearch();
 }
 
 /* ------------------------------------------------------------------ */
@@ -647,6 +656,8 @@ async function initProjectViewer() {
     container.textContent = "Failed to load project: " + err.message;
   }
 
+  initProjectContentSearch();
+
   const progressBar = document.getElementById("read-progress");
   if (progressBar) {
     const updateProgress = () => {
@@ -661,6 +672,8 @@ async function initProjectViewer() {
 /* ------------------------------------------------------------------ */
 /* Vim Keybindings                                                    */
 /* ------------------------------------------------------------------ */
+
+let activeSearchClear = null;
 
 function initVimKeys() {
   let lastKey = null;
@@ -796,6 +809,12 @@ function initVimKeys() {
     if (e.target.closest("input, textarea, [contenteditable]")) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
+    if (e.key === "Escape" && activeSearchClear) {
+      activeSearchClear();
+      e.preventDefault();
+      return;
+    }
+
     const now = Date.now();
     const isDouble = e.key === lastKey && (now - lastKeyTime) < 400;
     lastKey = e.key;
@@ -918,6 +937,356 @@ function initVimKeys() {
       default: return;
     }
     e.preventDefault();
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Search                                                             */
+/* ------------------------------------------------------------------ */
+
+function createSearchBar() {
+  let bar = document.getElementById("search-bar");
+  if (bar) return bar;
+  bar = document.createElement("div");
+  bar.id = "search-bar";
+  bar.className = "search-bar";
+  bar.hidden = true;
+  bar.innerHTML =
+    '<span class="search-prompt">/</span>' +
+    '<input id="search-input" class="search-input" type="text" autocomplete="off" spellcheck="false" />' +
+    '<span id="search-count" class="search-count"></span>';
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function highlightText(el, query) {
+  const text = el.textContent;
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(q, i);
+    if (idx === -1) { result += escHtml(text.slice(i)); break; }
+    result += escHtml(text.slice(i, idx));
+    result += '<mark class="search-match">' + escHtml(text.slice(idx, idx + q.length)) + "</mark>";
+    i = idx + q.length;
+  }
+  el.innerHTML = result;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function initBlogListSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+
+  let matches = [];
+  let matchIndex = -1;
+
+  // Store original text once per item
+  document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+    const t = item.querySelector(".playlist-title");
+    const e = item.querySelector(".playlist-excerpt");
+    if (t) item.dataset.origTitle = t.textContent;
+    if (e) item.dataset.origExcerpt = e.textContent;
+  });
+
+  function clearSearch() {
+    activeSearchClear = null;
+    document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+      item.classList.remove("search-hidden");
+      const t = item.querySelector(".playlist-title");
+      const e = item.querySelector(".playlist-excerpt");
+      if (t && item.dataset.origTitle) t.textContent = item.dataset.origTitle;
+      if (e && item.dataset.origExcerpt) e.textContent = item.dataset.origExcerpt;
+    });
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    document.querySelectorAll("#blogs-list mark.search-match.current")
+      .forEach(m => m.classList.remove("current"));
+    if (matchIndex < 0 || !matches[matchIndex]) return;
+    const item = matches[matchIndex];
+    const first = item.querySelector("mark.search-match");
+    if (first) first.classList.add("current");
+    item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+      const titleText = (item.dataset.origTitle || "").toLowerCase();
+      const excerptText = (item.dataset.origExcerpt || "").toLowerCase();
+      if (!titleText.includes(q) && !excerptText.includes(q)) {
+        item.classList.add("search-hidden");
+      } else {
+        const t = item.querySelector(".playlist-title");
+        const e = item.querySelector(".playlist-excerpt");
+        if (t) highlightText(t, query);
+        if (e) highlightText(e, query);
+        matches.push(item);
+      }
+    });
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) {
+      matchIndex = (matchIndex + 1) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+    if (ev.key === "N" && matches.length) {
+      matchIndex = (matchIndex - 1 + matches.length) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function initProjectListSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+
+  let matches = [];
+  let matchIndex = -1;
+
+  document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+    const t = card.querySelector(".project-title");
+    const d = card.querySelector(".project-desc");
+    if (t) card.dataset.origTitle = t.textContent;
+    if (d) card.dataset.origDesc  = d.textContent;
+  });
+
+  function clearSearch() {
+    activeSearchClear = null;
+    document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+      card.classList.remove("search-hidden");
+      const t = card.querySelector(".project-title");
+      const d = card.querySelector(".project-desc");
+      if (t && card.dataset.origTitle) t.textContent = card.dataset.origTitle;
+      if (d && card.dataset.origDesc)  d.textContent = card.dataset.origDesc;
+    });
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    document.querySelectorAll("#projects-grid mark.search-match.current")
+      .forEach(m => m.classList.remove("current"));
+    if (matchIndex < 0 || !matches[matchIndex]) return;
+    const first = matches[matchIndex].querySelector("mark.search-match");
+    if (first) first.classList.add("current");
+    matches[matchIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+      const titleText = (card.dataset.origTitle || "").toLowerCase();
+      const descText  = (card.dataset.origDesc  || "").toLowerCase();
+      if (!titleText.includes(q) && !descText.includes(q)) {
+        card.classList.add("search-hidden");
+      } else {
+        const t = card.querySelector(".project-title");
+        const d = card.querySelector(".project-desc");
+        if (t) highlightText(t, query);
+        if (d) highlightText(d, query);
+        matches.push(card);
+      }
+    });
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") { bar.hidden = false; input.value = ""; input.focus(); ev.preventDefault(); }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) { matchIndex = (matchIndex + 1) % matches.length; updateCurrent(); ev.preventDefault(); }
+    if (ev.key === "N" && matches.length) { matchIndex = (matchIndex - 1 + matches.length) % matches.length; updateCurrent(); ev.preventDefault(); }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter")  { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function walkTextNodes(node, q, out) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent;
+    const lower = text.toLowerCase();
+    if (!lower.includes(q)) return;
+    const frag = document.createDocumentFragment();
+    let i = 0;
+    while (i < text.length) {
+      const idx = lower.indexOf(q, i);
+      if (idx === -1) { frag.appendChild(document.createTextNode(text.slice(i))); break; }
+      if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
+      const mark = document.createElement("mark");
+      mark.className = "search-match";
+      mark.textContent = text.slice(idx, idx + q.length);
+      frag.appendChild(mark);
+      out.push(mark);
+      i = idx + q.length;
+    }
+    node.parentNode.replaceChild(frag, node);
+  } else if (node.nodeType === Node.ELEMENT_NODE &&
+             !["SCRIPT","STYLE","MARK"].includes(node.tagName)) {
+    Array.from(node.childNodes).forEach(child => walkTextNodes(child, q, out));
+  }
+}
+
+function initBlogContentSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+  const root = document.getElementById("blog-content");
+  if (!root) return;
+
+  let matches = [];
+  let matchIndex = -1;
+
+  function clearSearch() {
+    activeSearchClear = null;
+    root.querySelectorAll("mark.search-match").forEach(m => {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+    root.normalize();
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    matches.forEach((m, i) => m.classList.toggle("current", i === matchIndex));
+    if (matchIndex >= 0 && matches[matchIndex]) {
+      matches[matchIndex].scrollIntoView({ block: "center", behavior: "smooth" });
+      if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+    }
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    walkTextNodes(root, q, matches);
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) {
+      matchIndex = (matchIndex + 1) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+    if (ev.key === "N" && matches.length) {
+      matchIndex = (matchIndex - 1 + matches.length) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function initProjectContentSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+  const root = document.getElementById("project-content");
+  if (!root) return;
+
+  let matches = [];
+  let matchIndex = -1;
+
+  function clearSearch() {
+    activeSearchClear = null;
+    root.querySelectorAll("mark.search-match").forEach(m => {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+    root.normalize();
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    matches.forEach((m, i) => m.classList.toggle("current", i === matchIndex));
+    if (matchIndex >= 0 && matches[matchIndex]) {
+      matches[matchIndex].scrollIntoView({ block: "center", behavior: "smooth" });
+      if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+    }
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    walkTextNodes(root, q, matches);
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") { bar.hidden = false; input.value = ""; input.focus(); ev.preventDefault(); }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) { matchIndex = (matchIndex + 1) % matches.length; updateCurrent(); ev.preventDefault(); }
+    if (ev.key === "N" && matches.length) { matchIndex = (matchIndex - 1 + matches.length) % matches.length; updateCurrent(); ev.preventDefault(); }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter")  { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
   });
 }
 

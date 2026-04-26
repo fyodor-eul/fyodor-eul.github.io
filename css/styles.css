@@ -694,6 +694,43 @@ body::before {
   transform: translateY(-2px);
 }
 
+/* Search bar */
+.search-bar {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  z-index: 20;
+  background: #1d2021;
+  border-top: 1px solid #504945;
+  padding: 5px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+}
+.search-bar[hidden] { display: none; }
+.search-prompt { color: #b8bb26; font-weight: bold; }
+.search-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ebdbb2;
+  font-family: inherit;
+  font-size: inherit;
+  flex: 1;
+  caret-color: #b8bb26;
+}
+.search-count { color: #a89984; font-size: 0.75rem; min-width: 60px; text-align: right; }
+mark.search-match {
+  background: rgba(250, 189, 47, 0.25);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+mark.search-match.current { background: rgba(250, 189, 47, 0.65); }
+.playlist-item.search-hidden,
+.project-card.search-hidden { display: none; }
+
 /* for inline code */
 .markdown-content code {
   font-size: 15px;
