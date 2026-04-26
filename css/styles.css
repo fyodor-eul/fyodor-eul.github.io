@@ -681,6 +681,8 @@ body::before {
 /* highlight.js token colors are handled entirely by the
    gruvbox-dark-hard theme loaded in blog-viewer.html / project-viewer.html */
 
+.hljs-comment { color: #ebdbb2 !important; }
+
 /* for inline code */
 .markdown-content code {
   font-size: 15px;
