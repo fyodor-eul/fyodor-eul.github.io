@@ -669,6 +669,7 @@ body::before {
 /* General code color tweaks */
 .markdown-content pre code {
   color: #ebdbb2;               /* gruvbox fg */
+  background: #171615;
   font-size: 15px;
   line-height: 1.5;
 }
