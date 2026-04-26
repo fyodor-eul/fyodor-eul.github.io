@@ -1,4 +1,4 @@
-title: Understanding Access Control List on Linux
+title: Understanding Access Control Lists on Linux
 image: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 description: A practical guide to POSIX Access Control List.
 cover: images/UnderstandingACL/understanding_acl_thumbnail.jpg
@@ -8,9 +8,9 @@ cover: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 - Why Access Control List Matters
 - Viewing ACL Entries
 - Adding and Modifying ACL Entries
-- Understanding the ACL Mask
+- Understanding ACL Masks
 - Applying ACL Recursively to Directories
-- Setting Default ACL for New Files
+- Understanding Default ACLs
 - References
 
 # Why Access Control List Matters
@@ -188,7 +188,7 @@ You can also add multiple entries by separating with commas.
 setfacl -m u:bob:rw-,g:devteam:rw- file.txt
 ```
 
-# Understanding the ACL Mask
+# Understanding ACL Masks
 
 The mask in ACL defines the maximum effective permission for all the named user and group ACL entries except for `owner` and `other`.
 
@@ -478,7 +478,7 @@ setfacl -Rm u:bob:r-X project/
 
 By doing so, you will grant **bob** to read-only access to the files and read and execute access to its sub directories.
 
-# Understanding Default ACL
+# Understanding Default ACLs
 
 POSIX ACL allows us to pre-define entries on a directory for the future files and subdirectories underneath. These pre-defined entries are call default ACLs. Default ACLs are special permission templates that you set on a directory. When anyone creates a file or subdirectory inside that directory, the new iteam automatically inherits permissions from the default ACL.
 

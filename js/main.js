@@ -15,6 +15,7 @@ const PROJECT_FILES = [
 
 document.addEventListener("DOMContentLoaded", () => {
   initNav();
+  initVimKeys();
 
   const page = document.body.dataset.page;
   if (page === "home") initHome();
@@ -638,6 +639,41 @@ async function initProjectViewer() {
     };
     window.addEventListener("scroll", updateProgress, { passive: true });
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Vim Keybindings                                                    */
+/* ------------------------------------------------------------------ */
+
+function initVimKeys() {
+  let lastKey = null;
+  let lastKeyTime = 0;
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea, [contenteditable]")) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    // blog-viewer desktop scrolls #blog-pane; everything else scrolls window
+    const pane = document.getElementById("blog-pane");
+    const usePane = pane && window.innerWidth > 860;
+    const scroller = usePane ? pane : window;
+    const by = (px) => scroller.scrollBy({ top: px, behavior: "smooth" });
+    const to = (top) => scroller.scrollTo({ top, behavior: "smooth" });
+
+    const now = Date.now();
+    const isDouble = e.key === lastKey && (now - lastKeyTime) < 400;
+    lastKey = e.key;
+    lastKeyTime = now;
+
+    switch (e.key) {
+      case "j": by(60);                        break;
+      case "k": by(-60);                       break;
+      case "g": if (isDouble) { to(0); }       break;
+      case "G": to(999999);                    break;
+      default: return;
+    }
+    e.preventDefault();
+  });
 }
 
 /* ------------------------------------------------------------------ */

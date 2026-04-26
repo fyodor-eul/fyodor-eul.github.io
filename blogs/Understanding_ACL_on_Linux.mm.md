@@ -1,21 +1,26 @@
-title: Linux တွင် Access Control List နားလည်ခြင်း
+title: Understanding Access Control Lists on Linux
 image: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 description: POSIX Access Control List အတွက် လက်တွေ့သုံး လမ်းညွှန်။
 cover: images/UnderstandingACL/understanding_acl_thumbnail.jpg
 
 # မာတိကာ
 
-- Access Control List အဘယ်ကြောင့် အရေးကြီးသနည်း
-- ACL အသွင်အပြင်များကို ကြည့်ရှုခြင်း
-- ACL အသွင်အပြင်များ ထည့်သွင်းခြင်းနှင့် ပြင်ဆင်ခြင်း
-- ACL Mask ကို နားလည်ခြင်း
-- လမ်းညွှန်များတွင် ACL ကို recursive အသုံးပြုခြင်း
-- ဖိုင်အသစ်များအတွက် Default ACL သတ်မှတ်ခြင်း
+- Access Control List ကဘာကြောင့်အရေးကြီးတာလဲ
+- Viewing ACL Entries
+- Adding and Modifying ACL Entries
+- Understanding ACL Masks
+- Applying ACL Recursively to Directories
+- Understanding Default ACLs
 - ကိုးကားချက်များ
 
 # Access Control List အဘယ်ကြောင့် အရေးကြီးသနည်း
 
-ရိုးရာအားဖြင့်၊ Linux (UNIX) စနစ်များတွင် ဖိုင်နှင့် လမ်းညွှန်ခွင့်ပြုချက်များသည် `user`၊ `group` နှင့် `other` တို့တွင်သာ ကန့်သတ်ထားသည်ကို ကျွန်ုပ်တို့ အားလုံး သိသည်။ သို့သော် ဖိုင်ခွင့်ပြုချက်များကို အသေးစိတ် ထိန်းချုပ်ရန် လိုအပ်သောအခါ ဤနည်းသည် ကန့်သတ်ချက်များစွာ ဖြစ်လာသည်။ ဥပမာ၊ တစ်ဦးတည်းသော သတ်မှတ်ထားသည့် user တစ်ဦးကို ခွင့်ပြုချက်ပေးလိုသောအခါ မည်သို့ပြုလုပ်ရမည်နည်း? Group အများစုကို ဝင်ရောက်ခွင့်ပေးလိုသောအခါ မည်သို့ပြုလုပ်ရမည်နည်း? Owner မဟုတ်သော၊ ခွင့်ပြုထားသည့် group ၏ အဖွဲ့ဝင်လည်းမဟုတ်သော user တစ်ဦးကို ဝင်ရောက်ခွင့်ပေးရန် လိုအပ်သောအခါ မည်သို့ပြုလုပ်ရမည်နည်း? ဤနေရာတွင် **Access Control List (ACL)** ဝင်ရောက်လာသည်။ ဤဆောင်းပါးတွင် Linux စနစ်များတွင် ACL (***POSIX ACLs - [acl(5)](https://man7.org/linux/man-pages/man5/acl.5.html)***) ၏ အခြေခံများနှင့် လက်တွေ့အသုံးပြုမှုများကို ဆွေးနွေးမည်ဖြစ်သည်။
+ပုံမှန်ဆိုရင် ကျနော်တို့ Linux permission တွေသတ်မှတ်တဲ့အခါ `user` ရယ် `group` ရယ် `other` ဆိုပြီး ၃ နေရာမှာသတ်မှတ်ဖြစ်ကြတာများပါတယ်။ ဒါပေမယ့် ဒီ့ထက်အသေးစိတ်လာတဲ့ permission တွေသတ်မှတ်မယ်ဆိုရင်တော့ အဆိုပါ ၃ မျိုးနဲ့ မလုံလောက်တဲ့ အခြေနေမျိုးတွေကြုံရတတ်ပါတယ်။  
+ဥပမာ ကိုယ်နဲ့မတည့်တဲ့ user တစ်ယောက်ထဲကိုပဲ ကိုယ့် directory ဝင်မကြည့်အောင် ကွက်ပြီးပိတ်လိုက်ချင်တာမျိုး၊ ကိုယ့် team ထဲကမဟုတ်တဲ့အရေးကြီးလူတစ်ယောက်က project code တွေ review လုပ်ချင်လို့ read-only access ပေးချင်တာမျိုး စသဖြင့် အခြေနေမျိုးမျိုးရှိတတ်ပါတယ်။ ဒီလိုနေရာမှာ ACL entry တွေကို လှလှပပလေးရေးလိုက်တာက ထင်တာထက်ပိုပြီး တာသွားပါတယ်။ ဒါကြောင့် ကိုယ်က Linux user တစ်ယောက်အနေနဲ့ ACL entry တွေကိုပိုင်ပိုင်နိုင်နိုင် ကစားနိုင်ဖို့လိုတာပါ။ 
+
+ဤဆောင်းပါးတွင် Linux စနစ်များတွင် ACL (***POSIX ACLs - [acl(5)](https://man7.org/linux/man-pages/man5/acl.5.html)***) ၏ အခြေခံများနှင့် လက်တွေ့အသုံးပြုမှုများကို ဆွေးနွေးမည်ဖြစ်သည်။
+cover လုပ်ပေးသွားပါမယ်။
+
 
 ACL နှင့်ဆိုင်သည့် command များ မစတင်မီ၊ သင်၏ Linux distribution အတွက် လိုအပ်သည့် package ကို install ပြုလုပ်ထားရမည်ကို သေချာပါစေ။ RedHat-based distributions အတွက်၊ `acl` package ကို အောက်ပါအတိုင်း install ပြုလုပ်နိုင်သည်။
 
@@ -23,7 +28,7 @@ ACL နှင့်ဆိုင်သည့် command များ မစတင
 dnf install acl
 ```
 
-# ACL အသွင်အပြင်များကို ကြည့်ရှုခြင်း
+# Viewing ACL Entries
 
 အောက်ပါ command ဖြင့် ဖိုင်တစ်ခု၏ ACL အသွင်အပြင်များကို ကြည့်ရှုနိုင်သည်။
 
@@ -108,7 +113,7 @@ other::r--
 
 ```
 
-# ACL အသွင်အပြင်များ ထည့်သွင်းခြင်းနှင့် ပြင်ဆင်ခြင်း
+# Adding and Modifying ACL Entries
 
 ရိုးရာ UNIX ခွင့်ပြုချက်များ (`user::rwx`၊ `group::rwx`၊ `other::rwx`) နှင့် မတူဘဲ POSIX ACL ကို အသုံးပြုခြင်းသည် ဖိုင်ခွင့်ပြုချက်များကို ပိုမိုအသေးစိတ် ထိန်းချုပ်နိုင်မှု ပေးသည်။
 
