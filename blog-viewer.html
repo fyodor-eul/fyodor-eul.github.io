@@ -106,6 +106,12 @@
       background: rgba(184, 187, 38, 0.08);
     }
 
+    .toc-link.toc-cursor {
+      color: #fabd2f;
+      border-left-color: #fabd2f;
+      background: rgba(250, 189, 47, 0.12);
+    }
+
     /* Blog content: natural flow on mobile, window scrolls */
     .blog-pane { display: block; }
 
@@ -228,6 +234,10 @@
         overflow-y: visible;
         border-bottom: none;
         border-right: 1px solid #504945;
+      }
+
+      .toc-pane.toc-focused {
+        border-right-color: #fabd2f;
       }
 
       .toc-nav {

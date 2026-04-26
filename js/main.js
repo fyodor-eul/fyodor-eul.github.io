@@ -648,22 +648,85 @@ async function initProjectViewer() {
 function initVimKeys() {
   let lastKey = null;
   let lastKeyTime = 0;
+  let focusedPanel = "content"; // "content" | "toc"
+  let tocCursorIndex = -1;
+
+  function getTocLinks() {
+    return Array.from(document.querySelectorAll("#toc-nav .toc-link"));
+  }
+
+  function setTocCursor(index) {
+    const links = getTocLinks();
+    links.forEach((l, i) => l.classList.toggle("toc-cursor", i === index));
+    tocCursorIndex = index;
+    const nav = document.getElementById("toc-nav");
+    const link = links[index];
+    if (nav && link) {
+      const top = link.offsetTop;
+      const bottom = top + link.offsetHeight;
+      if (top < nav.scrollTop) nav.scrollTop = top;
+      else if (bottom > nav.scrollTop + nav.clientHeight)
+        nav.scrollTop = bottom - nav.clientHeight;
+    }
+  }
+
+  function focusToc() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (!tocPane || getComputedStyle(tocPane).display === 'none') return false;
+    focusedPanel = "toc";
+    tocPane.classList.add("toc-focused");
+    const links = getTocLinks();
+    if (links.length === 0) return true;
+    const activeIdx = links.findIndex(l => l.classList.contains("active"));
+    setTocCursor(activeIdx >= 0 ? activeIdx : 0);
+    return true;
+  }
+
+  function focusContent() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (tocPane) tocPane.classList.remove("toc-focused");
+    getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
+    tocCursorIndex = -1;
+    focusedPanel = "content";
+  }
 
   document.addEventListener("keydown", (e) => {
     if (e.target.closest("input, textarea, [contenteditable]")) return;
     if (e.metaKey || e.ctrlKey || e.altKey) return;
 
-    // blog-viewer desktop scrolls #blog-pane; everything else scrolls window
+    const now = Date.now();
+    const isDouble = e.key === lastKey && (now - lastKeyTime) < 400;
+    lastKey = e.key;
+    lastKeyTime = now;
+
+    // Panel focus switching
+    if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
+    if (e.key === "l") {
+      if (focusedPanel === "toc") { focusContent(); e.preventDefault(); }
+      return;
+    }
+
+    // TOC navigation mode
+    if (focusedPanel === "toc") {
+      const links = getTocLinks();
+      switch (e.key) {
+        case "j": setTocCursor(Math.min(tocCursorIndex + 1, links.length - 1)); break;
+        case "k": setTocCursor(Math.max(tocCursorIndex - 1, 0));                break;
+        case "Enter":
+          if (links[tocCursorIndex]) { links[tocCursorIndex].click(); focusContent(); }
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // Content scroll mode
     const pane = document.getElementById("blog-pane");
     const usePane = pane && window.innerWidth > 860;
     const scroller = usePane ? pane : window;
     const by = (px) => scroller.scrollBy({ top: px, behavior: "smooth" });
     const to = (top) => scroller.scrollTo({ top, behavior: "smooth" });
-
-    const now = Date.now();
-    const isDouble = e.key === lastKey && (now - lastKeyTime) < 400;
-    lastKey = e.key;
-    lastKeyTime = now;
 
     switch (e.key) {
       case "j": by(60);                        break;
