@@ -900,6 +900,8 @@ function initVimKeys() {
         case "l": focusContent();                                                break;
         case "j": setTocCursor(Math.min(tocCursorIndex + 1, links.length - 1)); break;
         case "k": setTocCursor(Math.max(tocCursorIndex - 1, 0));                break;
+        case "g": if (isDouble) setTocCursor(0);                                break;
+        case "G": setTocCursor(links.length - 1);                               break;
         case "Enter":
           if (links[tocCursorIndex]) { links[tocCursorIndex].click(); focusContent(); }
           break;
