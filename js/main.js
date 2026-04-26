@@ -392,20 +392,27 @@ async function initBlogViewer() {
       langBtn.style.display = "flex";
       updateToggleUI();
 
-      langBtn.addEventListener("click", async () => {
+      async function switchLang(toMM) {
+        if (isBurmese(currentFile) === toMM) return;
         currentFile = getAltFile(currentFile);
         updateToggleUI();
-
-        // Scroll blog pane back to top
         const pane = document.getElementById("blog-pane");
         if (pane) pane.scrollTop = 0;
-
         try {
           await renderBlog(currentFile);
         } catch (err) {
           console.error(err);
           container.textContent = "Failed to load: " + err.message;
         }
+      }
+
+      langBtn.addEventListener("click", () => switchLang(!isBurmese(currentFile)));
+
+      document.addEventListener("keydown", (ev) => {
+        if (ev.target.closest("input, textarea, [contenteditable]")) return;
+        if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        if (ev.key === "m") { switchLang(true);  ev.preventDefault(); }
+        if (ev.key === "e") { switchLang(false); ev.preventDefault(); }
       });
     }
     // If probe fails (404), button stays hidden
