@@ -254,12 +254,41 @@ body::before {
 }
 
 .hero-cover {
-  height: 120px;
-  background: linear-gradient(90deg, #b8bb26 0%, #83a598 40%, #d3869b 100%);
-  opacity: 0.25;
+  position: sticky;
+  top: 48px;
+  z-index: 0;
+  height: 300px;
+  background-image: url('../images/background/home.png');
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-cover::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, var(--cover-dim, 0.4));
+  transition: background 0.08s linear;
+}
+
+.hero-cover-text {
+  position: relative;
+  z-index: 1;
+  color: #ebdbb2;
+  font-family: var(--font-mono);
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 }
 
 .hero-content {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-wrap: wrap;
   gap: 16px;

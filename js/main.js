@@ -110,6 +110,15 @@ function initHome() {
   // Load previews
   loadProjectPreview();
   loadBlogPreview();
+
+  // Dim cover on scroll
+  const cover = document.querySelector(".hero-cover");
+  if (cover) {
+    window.addEventListener("scroll", () => {
+      const progress = Math.min(window.scrollY / cover.offsetHeight, 1);
+      cover.style.setProperty("--cover-dim", 0.4 + progress * 0.5);
+    }, { passive: true });
+  }
 }
 
 function typeSequence(steps) {
