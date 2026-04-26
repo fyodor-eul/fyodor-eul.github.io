@@ -648,11 +648,18 @@ async function initProjectViewer() {
 function initVimKeys() {
   let lastKey = null;
   let lastKeyTime = 0;
-  let focusedPanel = "content"; // "content" | "toc"
+  let focusedPanel = "content"; // "content" | "toc" | "nav"
   let tocCursorIndex = -1;
+  let navCursorIndex = -1;
 
   function getTocLinks() {
     return Array.from(document.querySelectorAll("#toc-nav .toc-link"));
+  }
+
+  function getNavItems() {
+    return Array.from(document.querySelectorAll(
+      ".site-header .nav-back-link, .site-header .nav-links a"
+    ));
   }
 
   function setTocCursor(index) {
@@ -668,6 +675,12 @@ function initVimKeys() {
       else if (bottom > nav.scrollTop + nav.clientHeight)
         nav.scrollTop = bottom - nav.clientHeight;
     }
+  }
+
+  function setNavCursor(index) {
+    const items = getNavItems();
+    items.forEach((item, i) => item.classList.toggle("nav-cursor", i === index));
+    navCursorIndex = index;
   }
 
   function focusToc() {
@@ -687,7 +700,18 @@ function initVimKeys() {
     if (tocPane) tocPane.classList.remove("toc-focused");
     getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
     tocCursorIndex = -1;
+    getNavItems().forEach(item => item.classList.remove("nav-cursor"));
+    navCursorIndex = -1;
     focusedPanel = "content";
+  }
+
+  function focusNav() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (tocPane) tocPane.classList.remove("toc-focused");
+    getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
+    tocCursorIndex = -1;
+    focusedPanel = "nav";
+    setNavCursor(0);
   }
 
   document.addEventListener("keydown", (e) => {
@@ -699,17 +723,34 @@ function initVimKeys() {
     lastKey = e.key;
     lastKeyTime = now;
 
-    // Panel focus switching
-    if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
-    if (e.key === "l") {
-      if (focusedPanel === "toc") { focusContent(); e.preventDefault(); }
+    // ── Nav mode ──────────────────────────────────────────────────────
+    if (focusedPanel === "nav") {
+      const items = getNavItems();
+      switch (e.key) {
+        case "h": setNavCursor((navCursorIndex - 1 + items.length) % items.length); break;
+        case "l": setNavCursor((navCursorIndex + 1) % items.length);                break;
+        case "j": focusContent();                                                   break;
+        case "Enter":
+          if (items[navCursorIndex]) items[navCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
       return;
     }
 
-    // TOC navigation mode
+    // ── Escape → nav (from content or toc) ───────────────────────────
+    if (e.key === "Escape") {
+      focusNav();
+      e.preventDefault();
+      return;
+    }
+
+    // ── TOC mode ──────────────────────────────────────────────────────
     if (focusedPanel === "toc") {
       const links = getTocLinks();
       switch (e.key) {
+        case "l": focusContent();                                                break;
         case "j": setTocCursor(Math.min(tocCursorIndex + 1, links.length - 1)); break;
         case "k": setTocCursor(Math.max(tocCursorIndex - 1, 0));                break;
         case "Enter":
@@ -721,7 +762,9 @@ function initVimKeys() {
       return;
     }
 
-    // Content scroll mode
+    // ── Content mode ──────────────────────────────────────────────────
+    if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
+
     const pane = document.getElementById("blog-pane");
     const usePane = pane && window.innerWidth > 860;
     const scroller = usePane ? pane : window;
