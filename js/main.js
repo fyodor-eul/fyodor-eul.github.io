@@ -150,7 +150,7 @@ async function loadProjectPreview() {
       const card = document.createElement("div");
       card.className = "card";
       card.addEventListener("click", () => {
-        window.location.href = "project-viewer.html?file=" + encodeURIComponent(item.file);
+        window.location.href = "project-viewer.html?file=" + encodeURIComponent(item.file) + "&from=home";
       });
 
       const thumb = document.createElement("div");
@@ -198,7 +198,7 @@ async function loadBlogPreview() {
       const row = document.createElement("div");
       row.className = "playlist-item";
       row.addEventListener("click", () => {
-        window.location.href = "blog-viewer.html?file=" + encodeURIComponent(item.file);
+        window.location.href = "blog-viewer.html?file=" + encodeURIComponent(item.file) + "&from=home";
       });
 
       const thumb = document.createElement("div");
@@ -355,6 +355,11 @@ async function initBlogViewer() {
   if (!baseFile || !container) {
     if (container) container.textContent = "No blog file specified.";
     return;
+  }
+
+  if (getQueryParam("from") === "home") {
+    const backLink = document.querySelector(".nav-back-link");
+    if (backLink) { backLink.textContent = "← Back to Home"; backLink.href = "index.html"; }
   }
 
   // Track current language state
@@ -612,6 +617,11 @@ async function initProjectViewer() {
   if (!file || !container) {
     if (container) container.textContent = "No project file specified.";
     return;
+  }
+
+  if (getQueryParam("from") === "home") {
+    const backLink = document.querySelector(".nav-back-link");
+    if (backLink) { backLink.textContent = "← Back to Home"; backLink.href = "index.html"; }
   }
 
   try {
