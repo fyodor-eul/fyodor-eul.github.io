@@ -380,6 +380,7 @@ async function initBlogViewer() {
   }
 
   initBlogContentSearch();
+  initVimCommand();
 
   // ── Language toggle setup ─────────────────────────────────────
   const langBtn = document.getElementById("lang-toggle");
@@ -657,6 +658,7 @@ async function initProjectViewer() {
   }
 
   initProjectContentSearch();
+  initVimCommand();
 
   const progressBar = document.getElementById("read-progress");
   if (progressBar) {
@@ -959,6 +961,54 @@ function createSearchBar() {
     '<span id="search-count" class="search-count"></span>';
   document.body.appendChild(bar);
   return bar;
+}
+
+function createCommandBar() {
+  let bar = document.getElementById("cmd-bar");
+  if (bar) return bar;
+  bar = document.createElement("div");
+  bar.id = "cmd-bar";
+  bar.className = "search-bar";
+  bar.hidden = true;
+  bar.innerHTML =
+    '<span class="search-prompt">:</span>' +
+    '<input id="cmd-input" class="search-input" type="text" autocomplete="off" spellcheck="false" />';
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function initVimCommand() {
+  const bar = createCommandBar();
+  const input = document.getElementById("cmd-input");
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === ":" && bar.hidden) {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      const cmd = input.value.trim();
+      bar.hidden = true;
+      input.blur();
+      if (cmd === "q") {
+        const back = document.querySelector(".nav-back-link");
+        if (back) window.location.href = back.href;
+      }
+      ev.preventDefault();
+    }
+    if (ev.key === "Escape") {
+      bar.hidden = true;
+      input.blur();
+      ev.preventDefault();
+    }
+  });
 }
 
 function highlightText(el, query) {
