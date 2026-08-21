@@ -2,11 +2,7 @@ title: Self-Hosted Modded Minecraft Server (Neoforge 26.2)
 image: images/projects/mc-server/cover.png
 description: Self-hosted modded Minecraft server (NeoForge 26.2) built from scratch on a Linux VPS including systemd-managed service with auto-restart and boot-start, nginx-hosted resource pack, curated mod set, and automated world backups.
 
-# Self-Hosted Modded Minecraft Server (NeoForge 26.2) on Linux
-
-A from-scratch deployment of a modded, multiplayer Minecraft server on a Linux VPS, including a curated mod set, custom imported world, and a `systemd` service to keep the service alive and manageable. This document mainly covers the architectural setup of this implementation.
-
-Stack: Alma Linux, NeoForge 26.2, Java 25, systemd, firewalld, nginx
+**Stack**: **Alma Linux**, **NeoForge 26.2**, **Java 25**, `systemd , `firewalld`, **Nginx**
 
 # 1. Overview
 
