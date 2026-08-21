@@ -199,11 +199,7 @@ vgremove myvg
 pvremove /dev/sdb1
 pvremove /dev/sdb2
 pvremove /dev/sdc1
-
 ```
-
-
-
 
 # Process Management
 
@@ -252,8 +248,6 @@ nmcli con del enp0s3
 nmcli con add con-name "static" type ethernet ifname enp0s3 ipv4.method manual ipv4.address 172.20.10.8/28 ipv4.gateway 172.20.10.1 ipv4.dns "8.8.8.8,8.8.4.4" autoconnect yes
 ```
 
-
-```
 ```bash
 # Manually Assigning IPv4 Addresses
 nmcli connection modify enp0s3 ipv4.addresses 192.168.100.8/24
@@ -398,10 +392,6 @@ systemctl restart sshd
 ```
 
 ## Systemd
-
-```bash
-```
-
 
 ## `cron` jobs
 

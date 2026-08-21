@@ -15,6 +15,7 @@ const PROJECT_FILES = [
 
 document.addEventListener("DOMContentLoaded", () => {
   initNav();
+  initVimKeys();
 
   const page = document.body.dataset.page;
   if (page === "home") initHome();
@@ -109,6 +110,15 @@ function initHome() {
   // Load previews
   loadProjectPreview();
   loadBlogPreview();
+
+  // Dim cover on scroll
+  const cover = document.querySelector(".hero-cover");
+  if (cover) {
+    window.addEventListener("scroll", () => {
+      const progress = Math.min(window.scrollY / cover.offsetHeight, 1);
+      cover.style.setProperty("--cover-dim", 0.4 + progress * 0.5);
+    }, { passive: true });
+  }
 }
 
 function typeSequence(steps) {
@@ -149,7 +159,7 @@ async function loadProjectPreview() {
       const card = document.createElement("div");
       card.className = "card";
       card.addEventListener("click", () => {
-        window.location.href = "project-viewer.html?file=" + encodeURIComponent(item.file);
+        window.location.href = "project-viewer.html?file=" + encodeURIComponent(item.file) + "&from=home";
       });
 
       const thumb = document.createElement("div");
@@ -197,7 +207,7 @@ async function loadBlogPreview() {
       const row = document.createElement("div");
       row.className = "playlist-item";
       row.addEventListener("click", () => {
-        window.location.href = "blog-viewer.html?file=" + encodeURIComponent(item.file);
+        window.location.href = "blog-viewer.html?file=" + encodeURIComponent(item.file) + "&from=home";
       });
 
       const thumb = document.createElement("div");
@@ -281,55 +291,272 @@ async function initBlogsPage() {
       console.error(err);
     }
   }
+  initBlogListSearch();
 }
 
 /* ------------------------------------------------------------------ */
 /* Blog Viewer                                                        */
 /* ------------------------------------------------------------------ */
-async function initBlogViewer() {
-  const file = getQueryParam("file");
-  const container = document.getElementById("blog-content");
-  const titleBar = document.getElementById("blog-terminal-title");
+// ── helpers for language toggle ──────────────────────────────────
 
-  if (!file || !container) {
+function getAltFile(file) {
+  // English → Burmese: foo.md → foo.mm.md
+  // Burmese → English: foo.mm.md → foo.md
+  if (file.endsWith(".mm.md")) {
+    return file.replace(/\.mm\.md$/, ".md");
+  }
+  return file.replace(/\.md$/, ".mm.md");
+}
+
+function isBurmese(file) {
+  return file.endsWith(".mm.md");
+}
+
+// ── render a blog file into the page ─────────────────────────────
+
+async function renderBlog(file) {
+  const container = document.getElementById("blog-content");
+  const titleBar  = document.getElementById("blog-terminal-title");
+  if (!container) return;
+
+  // Clear any active search highlights before replacing content
+  container.querySelectorAll("mark.search-match").forEach(m => {
+    m.replaceWith(document.createTextNode(m.textContent));
+  });
+
+  // Remove any existing cover so it doesn't duplicate on re-render
+  const oldCover = container.parentElement.querySelector(".blog-cover");
+  if (oldCover) oldCover.remove();
+
+  // Clear old TOC
+  const tocNav = document.getElementById("toc-nav");
+  if (tocNav) tocNav.innerHTML = "";
+
+  const { meta, content } = await fetchMarkdownWithMeta("blogs/" + file);
+
+  if (titleBar) titleBar.textContent = "cat blogs/" + file;
+
+  // Cover image
+  if (meta.cover) {
+    const pane = container.parentElement;
+    const coverEl = document.createElement("div");
+    coverEl.className = "blog-cover";
+    coverEl.style.backgroundImage = `url('${meta.cover}')`;
+    pane.insertBefore(coverEl, container);
+  }
+
+  const html = window.markdownToHtml(content);
+  container.innerHTML = `
+    <h1>${meta.title || file}</h1>
+    ${meta.description ? `<p><em>${meta.description}</em></p>` : ""}
+    ${html}
+  `;
+
+  if (window.hljs) {
+    container.querySelectorAll("pre code").forEach((block) => {
+      window.hljs.highlightElement(block);
+    });
+  }
+
+  buildTOC(container);
+}
+
+// ── main entry point ──────────────────────────────────────────────
+
+async function initBlogViewer() {
+  const baseFile = getQueryParam("file");
+  const container = document.getElementById("blog-content");
+
+  if (!baseFile || !container) {
     if (container) container.textContent = "No blog file specified.";
     return;
   }
 
+  if (getQueryParam("from") === "home") {
+    const backLink = document.querySelector(".nav-back-link");
+    if (backLink) { backLink.textContent = "← Back to Home"; backLink.href = "index.html"; }
+  }
+
+  // Track current language state
+  let currentFile = baseFile;
+
   try {
-    const { meta, content } = await fetchMarkdownWithMeta("blogs/" + file);
-    if (titleBar) {
-      titleBar.textContent = "cat blogs/" + file;
-    }
-
-    // 🆕 Notion-style cover
-    if (meta.cover) {
-      const body = container.parentElement;         // .terminal-body
-      const coverEl = document.createElement("div");
-      coverEl.className = "blog-cover";
-      coverEl.style.backgroundImage = `url('${meta.cover}')`;
-
-      // Insert cover ABOVE the article content
-      body.insertBefore(coverEl, container);
-    }
-
-    const html = window.markdownToHtml(content);
-    container.innerHTML = `
-      <h1>${meta.title || file}</h1>
-      ${meta.description ? `<p><em>${meta.description}</em></p>` : ""}
-      ${html}
-    `;
-
-    // Highlight code blocks if highlight.js is available
-    if (window.hljs) {
-      container.querySelectorAll("pre code").forEach((block) => {
-        window.hljs.highlightElement(block);
-      });
-    }
-
+    await renderBlog(currentFile);
   } catch (err) {
     console.error(err);
     container.textContent = "Failed to load blog: " + err.message;
+    return;
+  }
+
+  initBlogContentSearch();
+  initVimCommand();
+
+  // ── Language toggle setup ─────────────────────────────────────
+  const langBtn = document.getElementById("lang-toggle");
+  if (!langBtn) return;
+
+  // Check if the alternate language file exists
+  const altFile = getAltFile(baseFile);
+  try {
+    const probe = await fetch("blogs/" + altFile, { method: "HEAD" });
+    if (probe.ok) {
+      // Alternate exists — show the button
+      const track = document.getElementById("lang-switch-track");
+      const labelEn = document.getElementById("lang-label-en");
+      const labelMm = document.getElementById("lang-label-mm");
+
+      function updateToggleUI() {
+        const mm = isBurmese(currentFile);
+        if (track) track.classList.toggle("on", mm);
+        if (labelEn) labelEn.classList.toggle("active", !mm);
+        if (labelMm) labelMm.classList.toggle("active", mm);
+      }
+
+      langBtn.style.display = "flex";
+      updateToggleUI();
+
+      async function switchLang(toMM) {
+        if (isBurmese(currentFile) === toMM) return;
+        currentFile = getAltFile(currentFile);
+        updateToggleUI();
+        const pane = document.getElementById("blog-pane");
+        if (pane) pane.scrollTop = 0;
+        try {
+          await renderBlog(currentFile);
+        } catch (err) {
+          console.error(err);
+          container.textContent = "Failed to load: " + err.message;
+        }
+      }
+
+      langBtn.addEventListener("click", () => switchLang(!isBurmese(currentFile)));
+
+      document.addEventListener("keydown", (ev) => {
+        if (ev.target.closest("input, textarea, [contenteditable]")) return;
+        if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+        if (ev.key === "m") { switchLang(true);  ev.preventDefault(); }
+        if (ev.key === "e") { switchLang(false); ev.preventDefault(); }
+      });
+    }
+    // If probe fails (404), button stays hidden
+  } catch (_) {
+    // Network error — keep button hidden
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Table of Contents                                                  */
+/* ------------------------------------------------------------------ */
+
+function buildTOC(contentEl) {
+  const tocNav = document.getElementById("toc-nav");
+  if (!tocNav) return;
+
+  // Grab all headings from the rendered blog content
+  const headings = contentEl.querySelectorAll("h1, h2, h3");
+  if (headings.length === 0) {
+    // Hide sidebar if no headings
+    const sidebar = document.getElementById("toc-sidebar");
+    if (sidebar) sidebar.style.display = "none";
+    return;
+  }
+
+  // Give each heading a unique id so we can link to it
+  const slugCount = {};
+  headings.forEach((heading) => {
+    let slug = heading.textContent
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, "")   // strip special chars
+      .trim()
+      .replace(/\s+/g, "-");           // spaces to dashes
+
+    // Handle duplicate headings
+    if (slugCount[slug] !== undefined) {
+      slugCount[slug]++;
+      slug = slug + "-" + slugCount[slug];
+    } else {
+      slugCount[slug] = 0;
+    }
+
+    heading.id = slug;
+  });
+
+  // Build TOC links
+  headings.forEach((heading) => {
+    const depth = parseInt(heading.tagName[1]); // 1, 2, or 3
+    const link = document.createElement("a");
+    link.className = `toc-link depth-${depth}`;
+    link.href = "#" + heading.id;
+    link.textContent = heading.textContent;
+    link.title = heading.textContent;
+
+    // Smooth scroll — desktop scrolls blog-pane div, mobile uses scrollIntoView
+    link.addEventListener("click", (e) => {
+      e.preventDefault();
+      const pane = document.getElementById("blog-pane");
+      const isMobile = window.innerWidth <= 860;
+
+      if (!isMobile && pane && pane.scrollHeight > pane.clientHeight) {
+        const paneRect = pane.getBoundingClientRect();
+        const headingRect = heading.getBoundingClientRect();
+        pane.scrollBy({ top: headingRect.top - paneRect.top - 20, behavior: "smooth" });
+      } else {
+        heading.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+
+    tocNav.appendChild(link);
+  });
+
+  // Scroll spy — desktop watches blog-pane div, mobile watches viewport
+  const tocLinks = tocNav.querySelectorAll(".toc-link");
+  const blogPane = document.getElementById("blog-pane");
+  const isMobile = () => window.innerWidth <= 860;
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries.filter(e => e.isIntersecting);
+      if (visible.length === 0) return;
+
+      const top = visible.reduce((a, b) =>
+        a.boundingClientRect.top < b.boundingClientRect.top ? a : b
+      );
+
+      tocLinks.forEach((l) => l.classList.remove("active"));
+      const id = top.target.id;
+      const activeLink = tocNav.querySelector(`a[href="#${id}"]`);
+      if (activeLink) {
+        activeLink.classList.add("active");
+        // Scroll only within the TOC nav, never the window
+        const linkTop = activeLink.offsetTop;
+        const linkBottom = linkTop + activeLink.offsetHeight;
+        if (linkTop < tocNav.scrollTop) {
+          tocNav.scrollTop = linkTop;
+        } else if (linkBottom > tocNav.scrollTop + tocNav.clientHeight) {
+          tocNav.scrollTop = linkBottom - tocNav.clientHeight;
+        }
+      }
+    },
+    {
+      root: isMobile() ? null : blogPane,
+      rootMargin: "-60px 0px -70% 0px",
+      threshold: 0,
+    }
+  );
+
+  headings.forEach((h) => observer.observe(h));
+
+  // Reading progress bar
+  const progressBar = document.getElementById("read-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const scroller = isMobile() ? document.documentElement : blogPane;
+      const scrolled = scroller.scrollTop;
+      const total = scroller.scrollHeight - scroller.clientHeight;
+      progressBar.style.width = total > 0 ? (scrolled / total * 100) + "%" : "0%";
+    };
+    blogPane.addEventListener("scroll", updateProgress, { passive: true });
+    window.addEventListener("scroll", updateProgress, { passive: true });
   }
 }
 
@@ -394,6 +621,7 @@ async function initProjectsPage() {
       console.error(err);
     }
   }
+  initProjectListSearch();
 }
 
 /* ------------------------------------------------------------------ */
@@ -408,6 +636,11 @@ async function initProjectViewer() {
   if (!file || !container) {
     if (container) container.textContent = "No project file specified.";
     return;
+  }
+
+  if (getQueryParam("from") === "home") {
+    const backLink = document.querySelector(".nav-back-link");
+    if (backLink) { backLink.textContent = "← Back to Home"; backLink.href = "index.html"; }
   }
 
   try {
@@ -432,6 +665,690 @@ async function initProjectViewer() {
     console.error(err);
     container.textContent = "Failed to load project: " + err.message;
   }
+
+  initProjectContentSearch();
+  initVimCommand();
+
+  const progressBar = document.getElementById("read-progress");
+  if (progressBar) {
+    const updateProgress = () => {
+      const el = document.documentElement;
+      const total = el.scrollHeight - el.clientHeight;
+      progressBar.style.width = total > 0 ? (el.scrollTop / total * 100) + "%" : "0%";
+    };
+    window.addEventListener("scroll", updateProgress, { passive: true });
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Vim Keybindings                                                    */
+/* ------------------------------------------------------------------ */
+
+let activeSearchClear = null;
+
+function initVimKeys() {
+  let lastKey = null;
+  let lastKeyTime = 0;
+  let focusedPanel = "content"; // "content" | "toc" | "nav" | "list" | "home"
+  let tocCursorIndex = -1;
+  let navCursorIndex = -1;
+  let listCursorIndex = -1;
+  let homeCursorIndex = -1;
+  let homeSection = null; // "projects" | "blogs"
+
+  function getTocLinks() {
+    return Array.from(document.querySelectorAll("#toc-nav .toc-link"));
+  }
+
+  function getListItems() {
+    return Array.from(document.querySelectorAll(
+      "#blogs-list .playlist-item, #projects-grid .project-card"
+    ));
+  }
+
+  function getHomeItems(section) {
+    const sel = section === "projects"
+      ? "#project-preview-list .card"
+      : "#blog-preview-list .playlist-item";
+    return Array.from(document.querySelectorAll(sel));
+  }
+
+  function setHomeCursor(index) {
+    const items = getHomeItems(homeSection);
+    items.forEach((item, i) => item.classList.toggle("list-cursor", i === index));
+    homeCursorIndex = index;
+    if (items[index]) items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function focusHomeSection(section) {
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeSection = section;
+    focusedPanel = "home";
+    setHomeCursor(0);
+  }
+
+  function getGridCols(items) {
+    if (items.length < 2) return 1;
+    const firstTop = items[0].getBoundingClientRect().top;
+    let cols = 1;
+    for (let i = 1; i < items.length; i++) {
+      if (Math.abs(items[i].getBoundingClientRect().top - firstTop) < 5) cols++;
+      else break;
+    }
+    return cols;
+  }
+
+  function setListCursor(index) {
+    const items = getListItems();
+    items.forEach((item, i) => item.classList.toggle("list-cursor", i === index));
+    listCursorIndex = index;
+    if (items[index]) items[index].scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }
+
+  function focusList() {
+    focusedPanel = "list";
+    setListCursor(0);
+  }
+
+  function getNavItems() {
+    return Array.from(document.querySelectorAll(
+      ".site-header .nav-back-link, .site-header .nav-links a"
+    ));
+  }
+
+  function setTocCursor(index) {
+    const links = getTocLinks();
+    links.forEach((l, i) => l.classList.toggle("toc-cursor", i === index));
+    tocCursorIndex = index;
+    const nav = document.getElementById("toc-nav");
+    const link = links[index];
+    if (nav && link) {
+      const top = link.offsetTop;
+      const bottom = top + link.offsetHeight;
+      if (top < nav.scrollTop) nav.scrollTop = top;
+      else if (bottom > nav.scrollTop + nav.clientHeight)
+        nav.scrollTop = bottom - nav.clientHeight;
+    }
+  }
+
+  function setNavCursor(index) {
+    const items = getNavItems();
+    items.forEach((item, i) => item.classList.toggle("nav-cursor", i === index));
+    navCursorIndex = index;
+  }
+
+  function focusToc() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (!tocPane || getComputedStyle(tocPane).display === 'none') return false;
+    focusedPanel = "toc";
+    tocPane.classList.add("toc-focused");
+    const links = getTocLinks();
+    if (links.length === 0) return true;
+    const activeIdx = links.findIndex(l => l.classList.contains("active"));
+    setTocCursor(activeIdx >= 0 ? activeIdx : 0);
+    return true;
+  }
+
+  function focusContent() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (tocPane) tocPane.classList.remove("toc-focused");
+    getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
+    tocCursorIndex = -1;
+    getNavItems().forEach(item => item.classList.remove("nav-cursor"));
+    navCursorIndex = -1;
+    getListItems().forEach(item => item.classList.remove("list-cursor"));
+    listCursorIndex = -1;
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeCursorIndex = -1;
+    focusedPanel = "content";
+  }
+
+  function focusNav() {
+    const tocPane = document.getElementById("toc-sidebar");
+    if (tocPane) tocPane.classList.remove("toc-focused");
+    getTocLinks().forEach(l => l.classList.remove("toc-cursor"));
+    tocCursorIndex = -1;
+    getListItems().forEach(item => item.classList.remove("list-cursor"));
+    listCursorIndex = -1;
+    if (homeSection) getHomeItems(homeSection).forEach(i => i.classList.remove("list-cursor"));
+    homeCursorIndex = -1;
+    focusedPanel = "nav";
+    setNavCursor(0);
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target.closest("input, textarea, [contenteditable]")) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === "Escape" && activeSearchClear) {
+      activeSearchClear();
+      e.preventDefault();
+      return;
+    }
+
+    const now = Date.now();
+    const isDouble = e.key === lastKey && (now - lastKeyTime) < 400;
+    lastKey = e.key;
+    lastKeyTime = now;
+
+    // ── Nav mode ──────────────────────────────────────────────────────
+    if (focusedPanel === "nav") {
+      const items = getNavItems();
+      switch (e.key) {
+        case "h": setNavCursor((navCursorIndex - 1 + items.length) % items.length); break;
+        case "l": setNavCursor((navCursorIndex + 1) % items.length);                break;
+        case "j": focusContent();                                                   break;
+        case "Enter":
+          if (items[navCursorIndex]) items[navCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── Home section mode ─────────────────────────────────────────────
+    if (focusedPanel === "home") {
+      const items = getHomeItems(homeSection);
+      const cols = getGridCols(items);
+      switch (e.key) {
+        case "j":      setHomeCursor(Math.min(homeCursorIndex + cols, items.length - 1)); break;
+        case "k":      setHomeCursor(Math.max(homeCursorIndex - cols, 0));                break;
+        case "l":
+          if ((homeCursorIndex + 1) % cols !== 0 && homeCursorIndex + 1 < items.length)
+            setHomeCursor(homeCursorIndex + 1);
+          break;
+        case "h":
+          if (homeCursorIndex % cols !== 0)
+            setHomeCursor(homeCursorIndex - 1);
+          break;
+        case "Escape": focusContent();                                                    break;
+        case "Enter":
+          if (items[homeCursorIndex]) items[homeCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── List mode ─────────────────────────────────────────────────────
+    if (focusedPanel === "list") {
+      const items = getListItems();
+      const cols = getGridCols(items);
+      switch (e.key) {
+        case "j":      setListCursor(Math.min(listCursorIndex + cols, items.length - 1)); break;
+        case "k":      setListCursor(Math.max(listCursorIndex - cols, 0));                break;
+        case "l":
+          if ((listCursorIndex + 1) % cols !== 0 && listCursorIndex + 1 < items.length)
+            setListCursor(listCursorIndex + 1);
+          break;
+        case "h":
+          if (listCursorIndex % cols !== 0)
+            setListCursor(listCursorIndex - 1);
+          break;
+        case "Escape": focusNav();                                                        break;
+        case "Enter":
+          if (items[listCursorIndex]) items[listCursorIndex].click();
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── Escape → nav (from content or toc) ───────────────────────────
+    if (e.key === "Escape") {
+      focusNav();
+      e.preventDefault();
+      return;
+    }
+
+    // ── TOC mode ──────────────────────────────────────────────────────
+    if (focusedPanel === "toc") {
+      const links = getTocLinks();
+      switch (e.key) {
+        case "l": focusContent();                                                break;
+        case "j": setTocCursor(Math.min(tocCursorIndex + 1, links.length - 1)); break;
+        case "k": setTocCursor(Math.max(tocCursorIndex - 1, 0));                break;
+        case "g": if (isDouble) setTocCursor(0);                                break;
+        case "G": setTocCursor(links.length - 1);                               break;
+        case "Enter":
+          if (links[tocCursorIndex]) { links[tocCursorIndex].click(); focusContent(); }
+          break;
+        default: return;
+      }
+      e.preventDefault();
+      return;
+    }
+
+    // ── Content mode ──────────────────────────────────────────────────
+    if (e.key === "h") { if (focusToc()) e.preventDefault(); return; }
+
+    if (document.body.dataset.page === "home") {
+      if (e.key === "p") { const it = getHomeItems("projects"); if (it.length) { focusHomeSection("projects"); e.preventDefault(); } return; }
+      if (e.key === "b") { const it = getHomeItems("blogs");    if (it.length) { focusHomeSection("blogs");    e.preventDefault(); } return; }
+    }
+
+    if (e.key === "j" && (document.body.dataset.page === "blogs" || document.body.dataset.page === "projects")) {
+      const items = getListItems();
+      if (items.length > 0) { focusList(); e.preventDefault(); }
+      return;
+    }
+
+    const pane = document.getElementById("blog-pane");
+    const usePane = pane && window.innerWidth > 860;
+    const scroller = usePane ? pane : window;
+    const by = (px) => scroller.scrollBy({ top: px, behavior: "smooth" });
+    const to = (top) => scroller.scrollTo({ top, behavior: "smooth" });
+
+    switch (e.key) {
+      case "j": by(60);                        break;
+      case "k": by(-60);                       break;
+      case "g": if (isDouble) { to(0); }       break;
+      case "G": to(999999);                    break;
+      default: return;
+    }
+    e.preventDefault();
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/* Search                                                             */
+/* ------------------------------------------------------------------ */
+
+function createSearchBar() {
+  let bar = document.getElementById("search-bar");
+  if (bar) return bar;
+  bar = document.createElement("div");
+  bar.id = "search-bar";
+  bar.className = "search-bar";
+  bar.hidden = true;
+  bar.innerHTML =
+    '<span class="search-prompt">/</span>' +
+    '<input id="search-input" class="search-input" type="text" autocomplete="off" spellcheck="false" />' +
+    '<span id="search-count" class="search-count"></span>';
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function createCommandBar() {
+  let bar = document.getElementById("cmd-bar");
+  if (bar) return bar;
+  bar = document.createElement("div");
+  bar.id = "cmd-bar";
+  bar.className = "search-bar";
+  bar.hidden = true;
+  bar.innerHTML =
+    '<span class="search-prompt">:</span>' +
+    '<input id="cmd-input" class="search-input" type="text" autocomplete="off" spellcheck="false" />';
+  document.body.appendChild(bar);
+  return bar;
+}
+
+function initVimCommand() {
+  const bar = createCommandBar();
+  const input = document.getElementById("cmd-input");
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === ":" && bar.hidden) {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      const cmd = input.value.trim();
+      bar.hidden = true;
+      input.blur();
+      if (cmd === "q") {
+        const back = document.querySelector(".nav-back-link");
+        if (back) window.location.href = back.href;
+      }
+      ev.preventDefault();
+    }
+    if (ev.key === "Escape") {
+      bar.hidden = true;
+      input.blur();
+      ev.preventDefault();
+    }
+  });
+}
+
+function highlightText(el, query) {
+  const text = el.textContent;
+  const lower = text.toLowerCase();
+  const q = query.toLowerCase();
+  let result = "";
+  let i = 0;
+  while (i < text.length) {
+    const idx = lower.indexOf(q, i);
+    if (idx === -1) { result += escHtml(text.slice(i)); break; }
+    result += escHtml(text.slice(i, idx));
+    result += '<mark class="search-match">' + escHtml(text.slice(idx, idx + q.length)) + "</mark>";
+    i = idx + q.length;
+  }
+  el.innerHTML = result;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function initBlogListSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+
+  let matches = [];
+  let matchIndex = -1;
+
+  // Store original text once per item
+  document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+    const t = item.querySelector(".playlist-title");
+    const e = item.querySelector(".playlist-excerpt");
+    if (t) item.dataset.origTitle = t.textContent;
+    if (e) item.dataset.origExcerpt = e.textContent;
+  });
+
+  function clearSearch() {
+    activeSearchClear = null;
+    document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+      item.classList.remove("search-hidden");
+      const t = item.querySelector(".playlist-title");
+      const e = item.querySelector(".playlist-excerpt");
+      if (t && item.dataset.origTitle) t.textContent = item.dataset.origTitle;
+      if (e && item.dataset.origExcerpt) e.textContent = item.dataset.origExcerpt;
+    });
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    document.querySelectorAll("#blogs-list mark.search-match.current")
+      .forEach(m => m.classList.remove("current"));
+    if (matchIndex < 0 || !matches[matchIndex]) return;
+    const item = matches[matchIndex];
+    const first = item.querySelector("mark.search-match");
+    if (first) first.classList.add("current");
+    item.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    document.querySelectorAll("#blogs-list .playlist-item").forEach(item => {
+      const titleText = (item.dataset.origTitle || "").toLowerCase();
+      const excerptText = (item.dataset.origExcerpt || "").toLowerCase();
+      if (!titleText.includes(q) && !excerptText.includes(q)) {
+        item.classList.add("search-hidden");
+      } else {
+        const t = item.querySelector(".playlist-title");
+        const e = item.querySelector(".playlist-excerpt");
+        if (t) highlightText(t, query);
+        if (e) highlightText(e, query);
+        matches.push(item);
+      }
+    });
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) {
+      matchIndex = (matchIndex + 1) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+    if (ev.key === "N" && matches.length) {
+      matchIndex = (matchIndex - 1 + matches.length) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function initProjectListSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+
+  let matches = [];
+  let matchIndex = -1;
+
+  document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+    const t = card.querySelector(".project-title");
+    const d = card.querySelector(".project-desc");
+    if (t) card.dataset.origTitle = t.textContent;
+    if (d) card.dataset.origDesc  = d.textContent;
+  });
+
+  function clearSearch() {
+    activeSearchClear = null;
+    document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+      card.classList.remove("search-hidden");
+      const t = card.querySelector(".project-title");
+      const d = card.querySelector(".project-desc");
+      if (t && card.dataset.origTitle) t.textContent = card.dataset.origTitle;
+      if (d && card.dataset.origDesc)  d.textContent = card.dataset.origDesc;
+    });
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    document.querySelectorAll("#projects-grid mark.search-match.current")
+      .forEach(m => m.classList.remove("current"));
+    if (matchIndex < 0 || !matches[matchIndex]) return;
+    const first = matches[matchIndex].querySelector("mark.search-match");
+    if (first) first.classList.add("current");
+    matches[matchIndex].scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    document.querySelectorAll("#projects-grid .project-card").forEach(card => {
+      const titleText = (card.dataset.origTitle || "").toLowerCase();
+      const descText  = (card.dataset.origDesc  || "").toLowerCase();
+      if (!titleText.includes(q) && !descText.includes(q)) {
+        card.classList.add("search-hidden");
+      } else {
+        const t = card.querySelector(".project-title");
+        const d = card.querySelector(".project-desc");
+        if (t) highlightText(t, query);
+        if (d) highlightText(d, query);
+        matches.push(card);
+      }
+    });
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") { bar.hidden = false; input.value = ""; input.focus(); ev.preventDefault(); }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) { matchIndex = (matchIndex + 1) % matches.length; updateCurrent(); ev.preventDefault(); }
+    if (ev.key === "N" && matches.length) { matchIndex = (matchIndex - 1 + matches.length) % matches.length; updateCurrent(); ev.preventDefault(); }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter")  { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function walkTextNodes(node, q, out) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent;
+    const lower = text.toLowerCase();
+    if (!lower.includes(q)) return;
+    const frag = document.createDocumentFragment();
+    let i = 0;
+    while (i < text.length) {
+      const idx = lower.indexOf(q, i);
+      if (idx === -1) { frag.appendChild(document.createTextNode(text.slice(i))); break; }
+      if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
+      const mark = document.createElement("mark");
+      mark.className = "search-match";
+      mark.textContent = text.slice(idx, idx + q.length);
+      frag.appendChild(mark);
+      out.push(mark);
+      i = idx + q.length;
+    }
+    node.parentNode.replaceChild(frag, node);
+  } else if (node.nodeType === Node.ELEMENT_NODE &&
+             !["SCRIPT","STYLE","MARK"].includes(node.tagName)) {
+    Array.from(node.childNodes).forEach(child => walkTextNodes(child, q, out));
+  }
+}
+
+function initBlogContentSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+  const root = document.getElementById("blog-content");
+  if (!root) return;
+
+  let matches = [];
+  let matchIndex = -1;
+
+  function clearSearch() {
+    activeSearchClear = null;
+    root.querySelectorAll("mark.search-match").forEach(m => {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+    root.normalize();
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    matches.forEach((m, i) => m.classList.toggle("current", i === matchIndex));
+    if (matchIndex >= 0 && matches[matchIndex]) {
+      matches[matchIndex].scrollIntoView({ block: "center", behavior: "smooth" });
+      if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+    }
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    walkTextNodes(root, q, matches);
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") {
+      bar.hidden = false;
+      input.value = "";
+      input.focus();
+      ev.preventDefault();
+    }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) {
+      matchIndex = (matchIndex + 1) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+    if (ev.key === "N" && matches.length) {
+      matchIndex = (matchIndex - 1 + matches.length) % matches.length;
+      updateCurrent(); ev.preventDefault();
+    }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
+}
+
+function initProjectContentSearch() {
+  const bar = createSearchBar();
+  const input = document.getElementById("search-input");
+  const countEl = document.getElementById("search-count");
+  const root = document.getElementById("project-content");
+  if (!root) return;
+
+  let matches = [];
+  let matchIndex = -1;
+
+  function clearSearch() {
+    activeSearchClear = null;
+    root.querySelectorAll("mark.search-match").forEach(m => {
+      m.replaceWith(document.createTextNode(m.textContent));
+    });
+    root.normalize();
+    matches = []; matchIndex = -1;
+    if (countEl) countEl.textContent = "";
+  }
+
+  function updateCurrent() {
+    matches.forEach((m, i) => m.classList.toggle("current", i === matchIndex));
+    if (matchIndex >= 0 && matches[matchIndex]) {
+      matches[matchIndex].scrollIntoView({ block: "center", behavior: "smooth" });
+      if (countEl) countEl.textContent = (matchIndex + 1) + " / " + matches.length;
+    }
+  }
+
+  function runSearch(query) {
+    clearSearch();
+    if (!query) return;
+    const q = query.toLowerCase();
+    walkTextNodes(root, q, matches);
+    matchIndex = matches.length > 0 ? 0 : -1;
+    if (matches.length) activeSearchClear = clearSearch;
+    updateCurrent();
+  }
+
+  document.addEventListener("keydown", (ev) => {
+    if (ev.metaKey || ev.ctrlKey || ev.altKey) return;
+    if (ev.target.closest("input, textarea, [contenteditable]")) return;
+    if (ev.key === "/") { bar.hidden = false; input.value = ""; input.focus(); ev.preventDefault(); }
+    if (!bar.hidden) return;
+    if (ev.key === "n" && matches.length) { matchIndex = (matchIndex + 1) % matches.length; updateCurrent(); ev.preventDefault(); }
+    if (ev.key === "N" && matches.length) { matchIndex = (matchIndex - 1 + matches.length) % matches.length; updateCurrent(); ev.preventDefault(); }
+  });
+
+  input.addEventListener("input", () => runSearch(input.value));
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter")  { bar.hidden = true; input.blur(); ev.preventDefault(); }
+    if (ev.key === "Escape") { bar.hidden = true; input.blur(); clearSearch(); ev.preventDefault(); }
+  });
 }
 
 /* ------------------------------------------------------------------ */
@@ -446,4 +1363,3 @@ function createAsciiPlaceholder(label) {
   wrap.appendChild(pre);
   return wrap;
 }
-
