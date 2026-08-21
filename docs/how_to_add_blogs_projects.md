@@ -143,4 +143,3 @@ Now your new blog or project will appear in:
 - `~/blogs` or `~/projects` pages  
 - Dedicated viewer pages  
 
-Keep this file for future reference!
