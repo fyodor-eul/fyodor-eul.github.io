@@ -10,7 +10,8 @@ const BLOG_FILES = [
 const PROJECT_FILES = [
   { file: "Unresolved.md"},
   { file: "Lightweight-HTTP-Server.md" },
-  { file: "RouteRight.md" }
+  { file: "RouteRight.md" },
+  { file: "MinecraftServerSetupNeoForge.md" }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
