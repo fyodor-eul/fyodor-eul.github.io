@@ -1,10 +1,11 @@
 // js/main.js
 
-// List of markdown files (you can add more here)
+// List of markdown files
 const BLOG_FILES = [
   { file: "my-rhcsa-cheatsheet.md"},
   { file: "linux-user-mgmt.md"},
   { file: "Understanding_ACL_on_Linux.md"}
+  { file: "chroot-setup.md"}
 ];
 
 const PROJECT_FILES = [
