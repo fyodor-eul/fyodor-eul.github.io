@@ -4,7 +4,7 @@
 const BLOG_FILES = [
   { file: "my-rhcsa-cheatsheet.md"},
   { file: "linux-user-mgmt.md"},
-  { file: "Understanding_ACL_on_Linux.md"}
+  { file: "Understanding_ACL_on_Linux.md"},
   { file: "chroot-setup.md"}
 ];
 
