@@ -17,7 +17,7 @@ We all know that each of the running processes has its own set of permissions wh
 ```
 What if we want a process to see the filesystem root differently?
 We can achieve this by setting a certain directory on our system to appear as the root directory of a certain process, and the tool that allows us to do this is called **chroot**.
-> The [`chroot(1)`](https://man7.org/linux/man-pages/man1/chroot.1.html) is a command-line utility that uses [`chroot(2)`](https://man7.org/linux/man-pages/man2/chroot.2.html) systemcall to the change the process's root directory.
+> The [***chroot(1)***](https://man7.org/linux/man-pages/man1/chroot.1.html) is a command-line utility that uses [***chroot(2)***](https://man7.org/linux/man-pages/man2/chroot.2.html) systemcall to the change the process's root directory.
 
 For example, if we chrooted a process to `/opt/myroot`, `/opt/myroot` on the host will appear as `/` to that process. However, `/opt/myroot` remains `/opt/myroot` for other processes.
 
