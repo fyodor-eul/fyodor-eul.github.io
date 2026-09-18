@@ -765,8 +765,8 @@ mark.search-match.current { background: rgba(250, 189, 47, 0.65); }
   font-size: 15px;
 }
 
-/* Notion-like blog cover image */
-.blog-cover {
+/* Notion-like hero cover image, shared by blog & project viewers */
+.doc-cover {
   width: 100%;
   height: 220px;
   background-size: cover;
@@ -774,5 +774,200 @@ mark.search-match.current { background: rgba(250, 189, 47, 0.65); }
   background-repeat: no-repeat;
   border-radius: 8px;
   margin-bottom: 18px;
+}
+
+/* ═══════════════════════════════════════════════════
+   Doc viewer layout — shared by blog-viewer.html and
+   project-viewer.html (terminal + TOC sidebar + pane)
+   MOBILE FIRST — window scrolls, nothing is locked
+   Desktop overrides go inside @media (min-width:861px)
+   ═══════════════════════════════════════════════════ */
+
+.doc-page {
+  padding-top: 58px;   /* clear fixed navbar */
+  box-sizing: border-box;
+}
+
+.doc-terminal {
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-alt);
+  border: 1px solid #504945;
+  border-radius: 8px;
+  margin: 8px;
+}
+
+.doc-terminal > .terminal-header { flex-shrink: 0; }
+
+.doc-terminal-body {
+  display: flex;
+  flex-direction: column;   /* stack TOC above content on mobile */
+}
+
+/* TOC: hidden on mobile */
+.toc-pane {
+  display: none;
+}
+
+.toc-pane-header {
+  flex-shrink: 0;
+  padding: 7px 12px;
+  font-size: 0.68rem;
+  color: #a89984;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-bottom: 1px solid #3c3836;
+  background: #141617;
+}
+
+.toc-pane-header span { color: #b8bb26; }
+
+.toc-nav {
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px 0;
+  scrollbar-width: thin;
+  scrollbar-color: #504945 transparent;
+}
+
+.toc-nav::-webkit-scrollbar       { width: 4px; }
+.toc-nav::-webkit-scrollbar-track { background: transparent; }
+.toc-nav::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+
+.toc-link {
+  display: block;
+  box-sizing: border-box;
+  padding: 3px 10px;
+  font-size: 0.74rem;
+  color: #a89984;
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  line-height: 1.5;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.toc-link:hover {
+  color: #ebdbb2;
+  background: rgba(184, 187, 38, 0.06);
+}
+
+.toc-link.depth-1 { color: #ebdbb2; padding-left: 10px; font-size: 0.76rem; }
+.toc-link.depth-2 { padding-left: 20px; }
+.toc-link.depth-3 { padding-left: 30px; font-size: 0.70rem; color: #928374; }
+
+.toc-link.active {
+  color: #b8bb26;
+  border-left-color: #b8bb26;
+  background: rgba(184, 187, 38, 0.08);
+}
+
+.toc-link.toc-cursor {
+  color: #fabd2f;
+  border-left-color: #fabd2f;
+  background: rgba(250, 189, 47, 0.12);
+}
+
+/* Doc content: natural flow on mobile, window scrolls */
+.doc-pane { display: block; }
+
+.doc-pane-inner {
+  padding: 12px 14px 40px;
+  max-width: 900px;
+}
+
+/* ── Navbar back-link & progress bar ───────────── */
+.nav-back-link {
+  font-size: 0.75rem;
+  color: #a89984;
+  text-decoration: none;
+  letter-spacing: 0.03em;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+
+.nav-back-link:hover { color: #b8bb26; }
+
+.read-progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  width: 0%;
+  background: #b8bb26;
+  transition: width 0.1s linear;
+}
+
+/* ═══════════════════════════════════════════════════
+   DESKTOP — fixed layout, only the doc pane scrolls
+   ═══════════════════════════════════════════════════ */
+@media (min-width: 861px) {
+  html:has(body[data-page="blog-viewer"]),
+  html:has(body[data-page="project-viewer"]),
+  body[data-page="blog-viewer"],
+  body[data-page="project-viewer"] {
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .doc-page {
+    position: fixed;
+    top: 48px; left: 0; right: 0; bottom: 0;
+    padding: 10px 12px 12px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .doc-terminal {
+    flex: 1;
+    min-height: 0;
+    margin: 0;
+    overflow: hidden;
+  }
+
+  .doc-terminal-body {
+    flex: 1;
+    min-height: 0;
+    flex-direction: row;
+    overflow: hidden;
+  }
+
+  .toc-pane {
+    display: flex;
+    flex-direction: column;
+    width: 220px;
+    flex: 0 0 220px;
+    max-height: none;
+    overflow-y: visible;
+    border-bottom: none;
+    border-right: 1px solid #504945;
+  }
+
+  .toc-pane.toc-focused {
+    border-right-color: #fabd2f;
+  }
+
+  .toc-nav {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .toc-link { width: 220px; max-width: 220px; box-sizing: border-box; }
+
+  .doc-pane {
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #504945 transparent;
+  }
+
+  .doc-pane::-webkit-scrollbar       { width: 5px; }
+  .doc-pane::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
+
+  .doc-pane-inner { padding: 14px 28px 40px; }
 }
 

@@ -12,7 +12,8 @@ const PROJECT_FILES = [
   { file: "Unresolved.md"},
   { file: "Lightweight-HTTP-Server.md" },
   { file: "RouteRight.md" },
-  { file: "MinecraftServerSetupNeoForge.md" }
+  { file: "MinecraftServerSetupNeoForge.md" },
+  { file: "SecureMemberPortal.md" }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -316,6 +317,22 @@ function isBurmese(file) {
 
 // ── render a blog file into the page ─────────────────────────────
 
+// Hero banner shown above the title, shared by blog & project viewers.
+// `container` is the article element; the cover is inserted as its
+// previous sibling inside the pane-inner wrapper.
+function renderHeroCover(container, imageUrl) {
+  const oldCover = container.parentElement.querySelector(".doc-cover");
+  if (oldCover) oldCover.remove();
+
+  if (imageUrl) {
+    const pane = container.parentElement;
+    const coverEl = document.createElement("div");
+    coverEl.className = "doc-cover";
+    coverEl.style.backgroundImage = `url('${imageUrl}')`;
+    pane.insertBefore(coverEl, container);
+  }
+}
+
 async function renderBlog(file) {
   const container = document.getElementById("blog-content");
   const titleBar  = document.getElementById("blog-terminal-title");
@@ -326,10 +343,6 @@ async function renderBlog(file) {
     m.replaceWith(document.createTextNode(m.textContent));
   });
 
-  // Remove any existing cover so it doesn't duplicate on re-render
-  const oldCover = container.parentElement.querySelector(".blog-cover");
-  if (oldCover) oldCover.remove();
-
   // Clear old TOC
   const tocNav = document.getElementById("toc-nav");
   if (tocNav) tocNav.innerHTML = "";
@@ -338,14 +351,7 @@ async function renderBlog(file) {
 
   if (titleBar) titleBar.textContent = "cat blogs/" + file;
 
-  // Cover image
-  if (meta.cover) {
-    const pane = container.parentElement;
-    const coverEl = document.createElement("div");
-    coverEl.className = "blog-cover";
-    coverEl.style.backgroundImage = `url('${meta.cover}')`;
-    pane.insertBefore(coverEl, container);
-  }
+  renderHeroCover(container, meta.cover);
 
   const html = window.markdownToHtml(content);
   container.innerHTML = `
@@ -492,10 +498,10 @@ function buildTOC(contentEl) {
     link.textContent = heading.textContent;
     link.title = heading.textContent;
 
-    // Smooth scroll — desktop scrolls blog-pane div, mobile uses scrollIntoView
+    // Smooth scroll — desktop scrolls the doc-pane div, mobile uses scrollIntoView
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      const pane = document.getElementById("blog-pane");
+      const pane = contentEl.closest(".doc-pane");
       const isMobile = window.innerWidth <= 860;
 
       if (!isMobile && pane && pane.scrollHeight > pane.clientHeight) {
@@ -510,9 +516,9 @@ function buildTOC(contentEl) {
     tocNav.appendChild(link);
   });
 
-  // Scroll spy — desktop watches blog-pane div, mobile watches viewport
+  // Scroll spy — desktop watches the doc-pane div, mobile watches viewport
   const tocLinks = tocNav.querySelectorAll(".toc-link");
-  const blogPane = document.getElementById("blog-pane");
+  const docPane = contentEl.closest(".doc-pane");
   const isMobile = () => window.innerWidth <= 860;
 
   const observer = new IntersectionObserver(
@@ -540,7 +546,7 @@ function buildTOC(contentEl) {
       }
     },
     {
-      root: isMobile() ? null : blogPane,
+      root: isMobile() ? null : docPane,
       rootMargin: "-60px 0px -70% 0px",
       threshold: 0,
     }
@@ -552,12 +558,12 @@ function buildTOC(contentEl) {
   const progressBar = document.getElementById("read-progress");
   if (progressBar) {
     const updateProgress = () => {
-      const scroller = isMobile() ? document.documentElement : blogPane;
+      const scroller = isMobile() ? document.documentElement : docPane;
       const scrolled = scroller.scrollTop;
       const total = scroller.scrollHeight - scroller.clientHeight;
       progressBar.style.width = total > 0 ? (scrolled / total * 100) + "%" : "0%";
     };
-    blogPane.addEventListener("scroll", updateProgress, { passive: true });
+    docPane.addEventListener("scroll", updateProgress, { passive: true });
     window.addEventListener("scroll", updateProgress, { passive: true });
   }
 }
@@ -650,6 +656,9 @@ async function initProjectViewer() {
     if (titleBar) {
       titleBar.textContent = "cat projects/" + file;
     }
+
+    renderHeroCover(container, meta.cover || meta.image);
+
     const html = window.markdownToHtml(content);
     container.innerHTML = `
       <h1>${meta.title || file}</h1>
@@ -663,6 +672,8 @@ async function initProjectViewer() {
       });
     }
 
+    buildTOC(container);
+
   } catch (err) {
     console.error(err);
     container.textContent = "Failed to load project: " + err.message;
@@ -670,16 +681,6 @@ async function initProjectViewer() {
 
   initProjectContentSearch();
   initVimCommand();
-
-  const progressBar = document.getElementById("read-progress");
-  if (progressBar) {
-    const updateProgress = () => {
-      const el = document.documentElement;
-      const total = el.scrollHeight - el.clientHeight;
-      progressBar.style.width = total > 0 ? (el.scrollTop / total * 100) + "%" : "0%";
-    };
-    window.addEventListener("scroll", updateProgress, { passive: true });
-  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -938,7 +939,7 @@ function initVimKeys() {
       return;
     }
 
-    const pane = document.getElementById("blog-pane");
+    const pane = document.querySelector(".doc-pane");
     const usePane = pane && window.innerWidth > 860;
     const scroller = usePane ? pane : window;
     const by = (px) => scroller.scrollBy({ top: px, behavior: "smooth" });

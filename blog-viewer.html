@@ -8,11 +8,7 @@
   <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/gruvbox-dark-hard.min.css">
   <style>
-
-    /* ═══════════════════════════════════════════════════
-       MOBILE FIRST — window scrolls, nothing is locked
-       Desktop overrides go inside @media (min-width:861px)
-       ═══════════════════════════════════════════════════ */
+    /* Shared doc-viewer layout (terminal + TOC + pane) lives in css/styles.css */
 
     html, body {
       margin: 0;
@@ -21,103 +17,8 @@
       -webkit-overflow-scrolling: touch;
     }
 
-    /* ── Mobile layout: normal document flow ─────────── */
-    .blog-page {
-      padding-top: 58px;   /* clear fixed navbar */
-      box-sizing: border-box;
-    }
-
-    .blog-pane {
+    .doc-pane {
       touch-action: pan-y;
-    }
-
-    .blog-terminal {
-      display: flex;
-      flex-direction: column;
-      background: var(--bg-alt);
-      border: 1px solid #504945;
-      border-radius: 8px;
-      margin: 8px;
-    }
-
-    .blog-terminal > .terminal-header { flex-shrink: 0; }
-
-    .blog-terminal-body {
-      display: flex;
-      flex-direction: column;   /* stack TOC above content on mobile */
-    }
-
-    /* TOC: hidden on mobile */
-    .toc-pane {
-      display: none;
-    }
-
-    .toc-pane-header {
-      flex-shrink: 0;
-      padding: 7px 12px;
-      font-size: 0.68rem;
-      color: #a89984;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      border-bottom: 1px solid #3c3836;
-      background: #141617;
-    }
-
-    .toc-pane-header span { color: #b8bb26; }
-
-    .toc-nav {
-      overflow-y: auto;
-      overflow-x: hidden;
-      padding: 4px 0;
-      scrollbar-width: thin;
-      scrollbar-color: #504945 transparent;
-    }
-
-    .toc-nav::-webkit-scrollbar       { width: 4px; }
-    .toc-nav::-webkit-scrollbar-track { background: transparent; }
-    .toc-nav::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
-
-    .toc-link {
-      display: block;
-      box-sizing: border-box;
-      padding: 3px 10px;
-      font-size: 0.74rem;
-      color: #a89984;
-      text-decoration: none;
-      border-left: 2px solid transparent;
-      line-height: 1.5;
-      transition: color 0.15s, border-color 0.15s, background 0.15s;
-      word-break: break-word;
-      overflow-wrap: anywhere;
-    }
-
-    .toc-link:hover {
-      color: #ebdbb2;
-      background: rgba(184, 187, 38, 0.06);
-    }
-
-    .toc-link.depth-1 { color: #ebdbb2; padding-left: 10px; font-size: 0.76rem; }
-    .toc-link.depth-2 { padding-left: 20px; }
-    .toc-link.depth-3 { padding-left: 30px; font-size: 0.70rem; color: #928374; }
-
-    .toc-link.active {
-      color: #b8bb26;
-      border-left-color: #b8bb26;
-      background: rgba(184, 187, 38, 0.08);
-    }
-
-    .toc-link.toc-cursor {
-      color: #fabd2f;
-      border-left-color: #fabd2f;
-      background: rgba(250, 189, 47, 0.12);
-    }
-
-    /* Blog content: natural flow on mobile, window scrolls */
-    .blog-pane { display: block; }
-
-    .blog-pane-inner {
-      padding: 12px 14px 40px;
-      max-width: 900px;
     }
 
     /* ── Language toggle ────────────────────────────── */
@@ -175,96 +76,6 @@
 
     .lang-switch-track.on::after { content: "🇲🇲"; transform: translateX(24px); }
     .lang-switch-track.on { border-color: #b8bb26; }
-
-    /* ── Navbar back-link & progress bar ───────────── */
-    .nav-back-link {
-      font-size: 0.75rem;
-      color: #a89984;
-      text-decoration: none;
-      letter-spacing: 0.03em;
-      transition: color 0.15s;
-      white-space: nowrap;
-    }
-
-    .nav-back-link:hover { color: #b8bb26; }
-
-
-
-    .read-progress {
-      position: absolute;
-      bottom: 0; left: 0;
-      height: 2px;
-      width: 0%;
-      background: #b8bb26;
-      transition: width 0.1s linear;
-    }
-
-    /* ═══════════════════════════════════════════════════
-       DESKTOP — fixed layout, only blog-pane scrolls
-       ═══════════════════════════════════════════════════ */
-    @media (min-width: 861px) {
-      html, body { height: 100%; overflow: hidden; }
-
-      .blog-page {
-        position: fixed;
-        top: 48px; left: 0; right: 0; bottom: 0;
-        padding: 10px 12px 12px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .blog-terminal {
-        flex: 1;
-        min-height: 0;
-        margin: 0;
-        overflow: hidden;
-      }
-
-      .blog-terminal-body {
-        flex: 1;
-        min-height: 0;
-        flex-direction: row;
-        overflow: hidden;
-      }
-
-      .toc-pane {
-        display: flex;
-        flex-direction: column;
-        width: 220px;
-        flex: 0 0 220px;
-        max-height: none;
-        overflow-y: visible;
-        border-bottom: none;
-        border-right: 1px solid #504945;
-      }
-
-      .toc-pane.toc-focused {
-        border-right-color: #fabd2f;
-      }
-
-      .toc-nav {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-      }
-
-      .toc-link { width: 220px; max-width: 220px; box-sizing: border-box; }
-
-      .blog-pane {
-        flex: 1;
-        min-width: 0;
-        min-height: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        scrollbar-width: thin;
-        scrollbar-color: #504945 transparent;
-      }
-
-      .blog-pane::-webkit-scrollbar       { width: 5px; }
-      .blog-pane::-webkit-scrollbar-thumb { background: #504945; border-radius: 2px; }
-
-      .blog-pane-inner { padding: 14px 28px 40px; }
-    }
   </style>
 </head>
 <body data-page="blog-viewer">
@@ -287,8 +98,8 @@
   </header>
 
   <!-- flat div, not inside .page-container -->
-  <div class="blog-page">
-    <div class="blog-terminal">
+  <div class="doc-page">
+    <div class="doc-terminal">
 
       <!-- Terminal chrome -->
       <div class="terminal-header">
@@ -304,7 +115,7 @@
       </div>
 
       <!-- Two-pane body -->
-      <div class="blog-terminal-body">
+      <div class="doc-terminal-body">
 
         <!-- LEFT: TOC -->
         <div class="toc-pane" id="toc-sidebar">
@@ -317,8 +128,8 @@
         </div>
 
         <!-- RIGHT: Blog -->
-        <div class="blog-pane" id="blog-pane">
-          <div class="blog-pane-inner">
+        <div class="doc-pane" id="blog-pane">
+          <div class="doc-pane-inner">
             <article id="blog-content" class="markdown-content">
               <!-- JS-rendered blog -->
             </article>

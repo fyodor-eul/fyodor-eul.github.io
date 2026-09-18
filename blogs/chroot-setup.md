@@ -3,6 +3,15 @@ image: images/chrootSetup/diagram.png
 description: A guide to a basic setup of a `chroot` environment
 cover: images/chrootSetup/diagram.png
 
+# Table of Contents
+- Introduction
+- Creating a Simple `chroot` Jail
+- Understanding What We Built
+- Exiting and Cleaning
+- Limitations of `chroot`
+- Conclusion
+- References
+
 # Introduction
 We all know that each of the running processes has its own set of permissions when accessing the filesystem. Even so, they generally share the same filesystem hierarchy.
 ```bash
@@ -151,7 +160,8 @@ $ tree /opt/jailroot/
 
 7 directories, 5 files
 ```
-Now, we can chroot into `/opt/jailroot`. 
+## Entering the `chroot`
+With that everything setup, we can now chroot into `/opt/jailroot`. 
 ```bash
 $ sudo chroot /opt/jailroot /bin/bash
 bash-5.3#
@@ -167,7 +177,7 @@ $
 Notice that we still cannot run the `ls` command. This is because `pwd`([***bash(1)***](https://man7.org/linux/man-pages/man1/bash.1.html)) is the **Bash built-in**, whereas `ls` is an **external executable** that we have not yet added to our environment.
 Now, let's try to add the `ls` command into our jailed environment like we did previously with bash.
 
-## Adding `ls` and Its Libraries
+## Adding an External Command (`ls`)
 Let us locate the `ls` executable in the system.
 ```bash
 $ command -v ls
@@ -198,5 +208,20 @@ $ sudo chroot ./jailroot /bin/bash
 bash-5.3# ls
 bin  lib  lib64  usr
 bash-5.3#
+bash-5.3# exit
+$
 ```
+> Similarly, we can add other commands such as `whoami`, `grep`, `cat`, etc.
 
+# Understanding What We Built
+- include the image
+
+# Exiting and Cleaning
+
+# Limitations of `chroot`
+1. `chroot` only changes the filesystem view (`chroot` changes what `/` means to a process. It does not create a separate system)
+2. It is not a strong security boundary.
+
+# Conclusion
+
+# References

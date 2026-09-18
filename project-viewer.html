@@ -9,27 +9,22 @@
   <link rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/base16/solarized-dark.min.css">
   <style>
-    .nav-back-link {
-      font-size: 0.75rem;
-      color: #a89984;
-      text-decoration: none;
-      letter-spacing: 0.03em;
-      transition: color 0.15s;
-      white-space: nowrap;
-    }
-    .nav-back-link:hover { color: #b8bb26; }
+    /* Shared doc-viewer layout (terminal + TOC + pane) lives in css/styles.css */
 
-    .read-progress {
-      position: absolute;
-      bottom: 0; left: 0;
-      height: 2px;
-      width: 0%;
-      background: #b8bb26;
-      transition: width 0.1s linear;
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .doc-pane {
+      touch-action: pan-y;
     }
   </style>
 </head>
 <body data-page="project-viewer">
+
   <header class="site-header">
     <div class="nav-container">
       <div class="brand">
@@ -47,21 +42,43 @@
     <div class="read-progress" id="read-progress"></div>
   </header>
 
-  <main class="page-container">
-    <section class="terminal-window">
+  <!-- flat div, not inside .page-container -->
+  <div class="doc-page">
+    <div class="doc-terminal">
+
+      <!-- Terminal chrome -->
       <div class="terminal-header">
         <span class="dot red"></span>
         <span class="dot amber"></span>
         <span class="dot green"></span>
         <span class="terminal-title-bar" id="project-terminal-title">cat project.md</span>
       </div>
-      <div class="terminal-body">
-        <article id="project-content" class="markdown-content">
-          <!-- JS-rendered project -->
-        </article>
+
+      <!-- Two-pane body -->
+      <div class="doc-terminal-body">
+
+        <!-- LEFT: TOC -->
+        <div class="toc-pane" id="toc-sidebar">
+          <div class="toc-pane-header">
+            <span>~/</span> contents
+          </div>
+          <nav class="toc-nav" id="toc-nav">
+            <!-- JS fills this -->
+          </nav>
+        </div>
+
+        <!-- RIGHT: Project -->
+        <div class="doc-pane" id="project-pane">
+          <div class="doc-pane-inner">
+            <article id="project-content" class="markdown-content">
+              <!-- JS-rendered project -->
+            </article>
+          </div>
+        </div>
+
       </div>
-    </section>
-  </main>
+    </div>
+  </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <script src="js/markdown.js"></script>
@@ -69,4 +86,3 @@
 
 </body>
 </html>
-
