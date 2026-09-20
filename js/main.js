@@ -477,7 +477,7 @@ function buildTOC(contentEl) {
       .toLowerCase()
       .replace(/[^a-z0-9\s-]/g, "")   // strip special chars
       .trim()
-      .replace(/\s+/g, "-");           // spaces to dashes
+      .replace(/ /g, "-");             // spaces to dashes (GitHub-style: don't collapse runs)
 
     // Handle duplicate headings
     if (slugCount[slug] !== undefined) {

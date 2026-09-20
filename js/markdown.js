@@ -170,6 +170,37 @@ function markdownToHtml(md) {
       continue;
     }
 
+    // Blockquotes (contiguous "> " lines become one blockquote)
+    if (/^>\s?/.test(line)) {
+      closeList();
+      const quoteLines = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) {
+        quoteLines.push(lines[i].replace(/^>\s?/, ""));
+        i++;
+      }
+      i--; // compensate for the loop's own i++
+
+      // Blank quoted lines separate paragraphs within the blockquote
+      const paragraphs = [[]];
+      quoteLines.forEach((qLine) => {
+        if (qLine.trim() === "") {
+          paragraphs.push([]);
+        } else {
+          paragraphs[paragraphs.length - 1].push(qLine);
+        }
+      });
+
+      html.push(
+        "<blockquote>" +
+          paragraphs
+            .filter((p) => p.length > 0)
+            .map((p) => "<p>" + parseInline(escapeHtml(p.join(" "))) + "</p>")
+            .join("") +
+          "</blockquote>"
+      );
+      continue;
+    }
+
     // Headings
     if (/^###\s+/.test(line)) {
       closeList();
