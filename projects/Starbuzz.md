@@ -2,23 +2,6 @@ title: StarBuzz — Cloud-Native Café Ordering System
 image: images/projects/Starbuzz/cover.png
 description: StarBuzz is a serverless microservices café ordering platform on AWS, letting customers browse, order, and track purchases while staff manage the menu and fulfil orders in real time.
 
-## Table of Contents
-
-1. [Overview](#1-overview)
-2. [System Architecture](#2-system-architecture)
-3. [Authentication & Authorization](#3-authentication--authorization)
-4. [Backend Services](#4-backend-services)
-5. [Data Storage](#5-data-storage)
-6. [Frontend](#6-frontend)
-7. [Key Design Decisions & Deviations](#7-key-design-decisions--deviations)
-8. [Challenges & Debugging](#8-challenges--debugging)
-9. [Testing](#9-testing)
-10. [Deployment & Setup](#10-deployment--setup)
-11. [Screenshots — UI Walkthrough](#11-screenshots--ui-walkthrough)
-12. [Future Considerations](#12-future-considerations)
-
----
-
 ## 1. Overview
 
 StarBuzz is a cloud-native café ordering system built as coursework for CADV (CIT2C24 – Cloud Application Development) at Temasek Polytechnic. The system allows customers to browse a menu, place orders for dine-in or takeaway, and track order history, while café staff manage the menu and fulfil incoming orders in real time.
