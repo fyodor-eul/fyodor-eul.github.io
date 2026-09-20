@@ -13,7 +13,8 @@ const PROJECT_FILES = [
   { file: "Lightweight-HTTP-Server.md" },
   { file: "RouteRight.md" },
   { file: "MinecraftServerSetupNeoForge.md" },
-  { file: "SecureMemberPortal.md" }
+  { file: "SecureMemberPortal.md" },
+  { file: "Starbuzz.md" }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
