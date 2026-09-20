@@ -608,9 +608,42 @@ body::before {
   overflow-x: auto;
 }
 
-.markdown-content ul {
+.markdown-content ul,
+.markdown-content ol {
   padding-left: 18px;
   margin: 0 0 10px;
+}
+
+.markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 16px;
+  font-size: 0.85em;
+  overflow-x: auto;
+  display: block;
+}
+
+.markdown-content th,
+.markdown-content td {
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-content th {
+  background: var(--bg1);
+  color: var(--text);
+}
+
+.markdown-content tbody tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Back link --------------------------------------------------------------- */

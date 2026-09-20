@@ -29,6 +29,31 @@
     return text;
   }
 
+  // Table helpers -----------------------------------------------------
+
+  function splitTableRow(line) {
+    let trimmed = line.trim();
+    if (trimmed.startsWith("|")) trimmed = trimmed.slice(1);
+    if (trimmed.endsWith("|")) trimmed = trimmed.slice(0, -1);
+    return trimmed.split("|").map((cell) => cell.trim());
+  }
+
+  function isTableDelimiterRow(line) {
+    const trimmed = line.trim();
+    if (!trimmed.includes("-") || !trimmed.includes("|")) return false;
+    const cells = splitTableRow(trimmed);
+    return cells.length > 0 && cells.every((cell) => /^:?-+:?$/.test(cell));
+  }
+
+  function alignFromDelimiter(cell) {
+    const left = cell.startsWith(":");
+    const right = cell.endsWith(":");
+    if (left && right) return "center";
+    if (right) return "right";
+    if (left) return "left";
+    return "";
+  }
+
 function markdownToHtml(md) {
   if (!md) return "";
 
@@ -37,15 +62,15 @@ function markdownToHtml(md) {
 
   const lines = md.split("\n");
   const html = [];
-  let inList = false;
+  let listType = null; // "ul" | "ol" | null
   let inCodeBlock = false;
   let codeBuffer = [];
   let codeLang = "";
 
   function closeList() {
-    if (inList) {
-      html.push("</ul>");
-      inList = false;
+    if (listType) {
+      html.push(listType === "ul" ? "</ul>" : "</ol>");
+      listType = null;
     }
   }
 
@@ -65,8 +90,8 @@ function markdownToHtml(md) {
     }
   }
 
-  for (let rawLine of lines) {
-    let line = rawLine;
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
 
     // Code fences ```lang
     if (line.trim().startsWith("```")) {
@@ -95,6 +120,56 @@ function markdownToHtml(md) {
       continue;
     }
 
+    // Horizontal rule (---, ***, ___)
+    if (/^(-{3,}|\*{3,}|_{3,})\s*$/.test(line.trim())) {
+      closeList();
+      html.push("<hr>");
+      continue;
+    }
+
+    // Tables: a row containing "|" immediately followed by a valid delimiter row
+    if (line.includes("|") && i + 1 < lines.length && isTableDelimiterRow(lines[i + 1])) {
+      closeList();
+
+      const headerCells = splitTableRow(line);
+      const aligns = splitTableRow(lines[i + 1]).map(alignFromDelimiter);
+      i += 2; // consume header + delimiter rows
+
+      const bodyRows = [];
+      while (i < lines.length && lines[i].trim() !== "" && lines[i].includes("|")) {
+        bodyRows.push(splitTableRow(lines[i]));
+        i++;
+      }
+      i--; // compensate for the loop's own i++
+
+      html.push("<table>");
+      html.push(
+        "<thead><tr>" +
+          headerCells
+            .map((cell, idx) => {
+              const style = aligns[idx] ? ` style="text-align:${aligns[idx]}"` : "";
+              return `<th${style}>${parseInline(escapeHtml(cell))}</th>`;
+            })
+            .join("") +
+          "</tr></thead>"
+      );
+      html.push("<tbody>");
+      bodyRows.forEach((row) => {
+        html.push(
+          "<tr>" +
+            row
+              .map((cell, idx) => {
+                const style = aligns[idx] ? ` style="text-align:${aligns[idx]}"` : "";
+                return `<td${style}>${parseInline(escapeHtml(cell))}</td>`;
+              })
+              .join("") +
+            "</tr>"
+        );
+      });
+      html.push("</tbody></table>");
+      continue;
+    }
+
     // Headings
     if (/^###\s+/.test(line)) {
       closeList();
@@ -117,16 +192,29 @@ function markdownToHtml(md) {
 
     // Unordered lists (- or *)
     if (/^\s*[-*]\s+/.test(line)) {
-      if (!inList) {
-        inList = true;
+      if (listType !== "ul") {
+        closeList();
+        listType = "ul";
         html.push("<ul>");
       }
       const itemText = line.replace(/^\s*[-*]\s+/, "");
       html.push("<li>" + parseInline(escapeHtml(itemText)) + "</li>");
       continue;
-    } else {
-      closeList();
     }
+
+    // Ordered lists (1. 2. ...)
+    if (/^\s*\d+\.\s+/.test(line)) {
+      if (listType !== "ol") {
+        closeList();
+        listType = "ol";
+        html.push("<ol>");
+      }
+      const itemText = line.replace(/^\s*\d+\.\s+/, "");
+      html.push("<li>" + parseInline(escapeHtml(itemText)) + "</li>");
+      continue;
+    }
+
+    closeList();
 
     // Default: paragraph
     html.push("<p>" + parseInline(escapeHtml(line)) + "</p>");
