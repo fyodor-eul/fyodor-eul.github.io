@@ -1,0 +1,214 @@
+title: Minimal Container Runtime
+image: images/projects/MinimalContainerRuntime/cover.jpeg
+description: A from-scratch container runtime written in Bash. It builds an isolated, network-connected
+container out of raw Linux primitives such as namespaces, `pivot_root`, veth pairs, a bridge, and
+`iptables` NAT without Docker, `runc`, or any container tooling. The goal is pedagogical:
+every mechanism a real runtime hides behind a daemon is here in plain shell.
+link: https://github.com/fyodor-eul/minimal-container-runtime
+
+## Overview
+
+The runtime is a single script that supports four actions:
+
+| Action | Purpose |
+|--------|---------|
+| `install` | Bootstrap the Alpine rootfs and set up the host bridge + NAT once. |
+| `run` | Launch the container: create namespaces, wire up networking, `pivot_root`, drop into a shell. |
+| `remove` | Tear down a container's veth, mounts, and directory. |
+| `ns_init` | Internal entry point re-executed inside the new namespaces (not called directly by the user). |
+
+Each container lives under `$HOME/.conruntime/<container-name>/` with its own `rootfs`,
+`base.tar.gz` cache, `container.pid`, and a `network-ready` synchronization file.
+
+![Overview: container isolated from host via namespaces, connected to the internet through a bridge and NAT](images/projects/MinimalContainerRuntime/image1-bridge-topology.png)
+
+---
+
+## Requirements
+
+- Linux kernel with user, mount, PID, IPC, UTS, and network namespace support.
+- `unshare`, `nsenter`, `ip`, `iptables`, `tar`, `curl` available on the host.
+- An entry for your user in `/etc/subuid` and `/etc/subgid` (see below).
+- `sudo` for the host-side network setup (bridge, veth, `iptables`, `sysctl`). The
+  container process itself runs unprivileged inside a user namespace.
+
+---
+
+## Usage
+
+```bash
+# One-time: bootstrap rootfs + host bridge and NAT
+./conruntime install mycontainer
+
+# Start the container and drop into a shell
+./conruntime run mycontainer
+
+# Remove it when done (must be exited first)
+./conruntime remove mycontainer
+```
+
+Inside the container you land on `/bin/sh` with `HOME=/root`, an isolated process tree,
+and outbound internet through the host.
+
+---
+
+## Architecture
+
+The design mirrors what Docker does, decomposed into its constituent syscalls and commands:
+
+- **Isolation** comes from a bundle of namespaces created in a single `unshare` call
+  (`--mount --pid --fork --ipc -C -n -u -U`).
+- **Filesystem** isolation is completed by `pivot_root` into the extracted Alpine rootfs.
+- **Networking** uses a persistent host bridge (`conbr0`) with a per-container veth pair;
+  the host masquerades container traffic out through the default interface.
+- **Privilege** is handled by a user namespace that maps the caller to root *inside* the
+  container while mapping a `/etc/subuid` range for everything else.
+
+---
+
+## How it works
+
+### 1. Root filesystem bootstrap
+
+`bootstrap_rootfs` downloads the Alpine `minirootfs` tarball (v3.19.1, x86_64) into the
+container directory, caches it as `base.tar.gz`, and extracts it into `rootfs/`. If
+`rootfs/bin` already exists the step is skipped, so re-runs are cheap and idempotent.
+
+```bash
+BASE_LINK="https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz"
+```
+
+### 2. User namespace and UID/GID mapping
+
+The container runs in a **user namespace** (`-U`), so no real root is required on the host.
+The mapping is built from two sources:
+
+- The caller's own UID/GID is mapped to `0` inside the namespace (one ID):
+  `--map-users=$USER_ID,0,1` and `--map-groups=$GROUP_ID,0,1`.
+- A delegated range from `/etc/subuid` / `/etc/subgid` is mapped starting at inside-ID `1`,
+  covering the remaining IDs the rootfs needs.
+
+The script parses those files directly and aborts if no delegation exists:
+
+```bash
+subuid_id=$(cat /etc/subuid    | grep "^$USER:" | cut -d: -f2)
+subuid_count=$(cat /etc/subuid | grep "^$USER:" | cut -d: -f3)
+# ...
+if [[ -z "$subuid_id" || -z "$subgid_id" ]]; then
+  echo "[!] No /etc/subuid or /etc/subgid entry for $(id -un). Add one first." >&2
+  exit 1
+fi
+```
+
+Conceptually, host ID ranges are projected onto a contiguous range inside the namespace:
+the caller becomes `0`, and the delegated block becomes `1 .. count`.
+
+![UID/GID mapping: host subuid/subgid ranges projected into the container's user namespace](images/projects/MinimalContainerRuntime/image2-uid-gid-mapping.png)
+
+### 3. PID namespace and the fork dance
+
+`unshare` is invoked with `--pid --fork`. The `--fork` flag matters: a new PID namespace only
+takes effect for **children** of the process that created it — the creating process itself
+does not move into the new namespace. `unshare --fork` therefore forks a child that becomes
+PID 1 inside the new namespace, and that child re-executes the script's `ns_init` action.
+
+```bash
+unshare --mount --pid --fork --ipc -C -n -u -U \
+  --map-users="$USER_ID",0,1  --map-users="$subuid_id",1,"$subuid_count" \
+  --map-groups="$GROUP_ID",0,1 --map-groups="$subgid_id",1,"$subgid_count" \
+  "$0" ns_init "$CONTAINER_NAME" "$network_ready" &
+```
+
+The parent captures the child PID (`$!`), records it in `container.pid`, and uses it as the
+target for `nsenter` when configuring the container's network from the host side. Job control
+(`set -m`) lets the script background the container and later foreground it with `fg %1`.
+
+![PID namespace: unshare --fork creates a new namespace and forks the child in as PID 1](images/projects/MinimalContainerRuntime/image3-pid-namespace.png)
+
+### 4. Filesystem isolation with pivot_root
+
+Inside `ns_init`, the child waits on the `network-ready` file so it doesn't proceed until the
+host has finished wiring the veth into the namespace. It then:
+
+1. Marks the mount tree private (`mount --make-rprivate /`) so mount events don't leak back
+   to the host.
+2. Mounts a fresh `proc` and `sysfs` into the rootfs (with `nosuid,nodev,noexec,relatime`).
+3. Bind-mounts the rootfs onto itself (a `pivot_root` requirement) and `pivot_root`s into it,
+   moving the old root aside to `./oldroot`.
+4. Resets `PATH`, rehashes, then lazily unmounts and removes `oldroot`, fully detaching the
+   container from the host filesystem.
+5. `exec /bin/sh` to hand control to the container's shell as PID 1.
+
+```bash
+mount --make-rprivate /
+mount -t proc  -o nosuid,nodev,noexec,relatime proc  "$ROOTFS/proc"
+mount -t sysfs -o nosuid,nodev,noexec,relatime sysfs "$ROOTFS/sys"
+mount --rbind "$ROOTFS" "$ROOTFS"
+cd "$ROOTFS"
+mkdir -p ./oldroot
+pivot_root . ./oldroot
+umount -l /oldroot
+rmdir /oldroot
+exec /bin/sh
+```
+
+### 5. Networking: bridge, veth, and NAT
+
+Networking is split between a **once-per-host** setup and a **per-container** setup.
+
+**Host setup** (`setup_network`, run during `install`):
+
+- Creates the bridge `conbr0` with address `10.0.0.1/24` and brings it up.
+- Enables IPv4 forwarding (`sysctl -w net.ipv4.ip_forward=1`).
+- Adds a `MASQUERADE` rule for the `10.0.0.0/24` subnet out the host's default interface,
+  so container traffic is NATed onto the real network. Both the bridge and the rule are
+  created idempotently (existence is checked first).
+
+```bash
+sudo iptables -t nat -A POSTROUTING -s "$SUBNET" -o "$OUT_IFACE" -j MASQUERADE
+```
+
+**Per-container setup** (`setup_container_network`, run from the host during `run`):
+
+- Creates a veth pair `conveth-<name>` ↔ `conbr-<name>`.
+- Attaches the host end (`conbr-<name>`) to `conbr0` and brings it up.
+- Moves the container end into the container's network namespace via `ip link set ... netns <pid>`.
+- Uses `nsenter -t <pid> -n` to configure the namespace: assign `10.0.0.2/24`, bring the veth
+  and loopback up, and add a default route via the bridge `10.0.0.1`.
+
+Because the container's default route points at `conbr0` and the host masquerades the subnet,
+the container reaches the internet exactly as any bridged host would.
+
+![Network topology: host bridge conbr0, per-container veth pairs, and MASQUERADE NAT to the internet](images/projects/MinimalContainerRuntime/image1-bridge-topology.png)
+
+The NAT itself hooks into the kernel's netfilter chain. Outbound container packets are routed
+"through us" and rewritten at `POSTROUTING`, which is where the `MASQUERADE` target lives:
+
+![Netfilter hooks: packets traverse PREROUTING, the routing decision, FORWARD, and POSTROUTING where MASQUERADE rewrites the source](images/projects/MinimalContainerRuntime/image4-netfilter-hooks.png)
+
+---
+
+## Teardown
+
+`remove`:
+
+1. Refuses to delete a container whose PID (from `container.pid`) is still alive.
+2. Deletes the host-side veth if present (removing one end removes the pair).
+3. Lazily unmounts any stale mounts left under `rootfs`.
+4. Removes the container directory.
+
+```bash
+./conruntime remove mycontainer
+```
+
+---
+
+## Known limitations
+
+- `pivot_root_setup` is a stub; the real pivot logic lives in `ns_init`.
+- `/dev` device nodes are not populated (the `mknod` block is commented out), so containers
+  have no `/dev/null`, `/dev/urandom`, etc.
+- Networking is fixed to a single container address (`10.0.0.2/24`); running multiple
+  containers concurrently would collide on that IP.
+- The rootfs URL and architecture are hardcoded to Alpine 3.19.1 x86_64.
+- Host network setup requires `sudo`; the bridge and NAT rule persist until removed manually.

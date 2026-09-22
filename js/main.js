@@ -14,7 +14,8 @@ const PROJECT_FILES = [
   { file: "RouteRight.md" },
   { file: "MinecraftServerSetupNeoForge.md" },
   { file: "SecureMemberPortal.md" },
-  { file: "Starbuzz.md" }
+  { file: "Starbuzz.md" },
+  { file: "MinimalContainerRuntime" }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
