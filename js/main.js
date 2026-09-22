@@ -124,6 +124,17 @@ function initHome() {
       cover.style.setProperty("--cover-dim", 0.4 + progress * 0.5);
     }, { passive: true });
   }
+
+  // About Me "Read more" toggle
+  const aboutText = document.getElementById("about-text");
+  const aboutToggle = document.getElementById("about-toggle");
+  if (aboutText && aboutToggle) {
+    aboutToggle.addEventListener("click", () => {
+      const expanded = aboutText.classList.toggle("expanded");
+      aboutToggle.textContent = expanded ? "Read less" : "Read more";
+      aboutToggle.setAttribute("aria-expanded", expanded ? "true" : "false");
+    });
+  }
 }
 
 function typeSequence(steps) {

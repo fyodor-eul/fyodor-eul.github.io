@@ -232,6 +232,53 @@ body::before {
   margin-bottom: 16px;
 }
 
+/* About Me — collapsible "Read more" text --------------------------------- */
+
+.about-text {
+  position: relative;
+  max-height: 150px;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+.about-text.expanded {
+  max-height: 2000px;
+}
+
+.about-text::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 56px;
+  background: linear-gradient(to bottom, transparent, var(--bg-alt));
+  opacity: 1;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.about-text.expanded::after {
+  opacity: 0;
+}
+
+.about-toggle {
+  display: inline-block;
+  margin-top: 10px;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--blue);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.about-toggle:hover {
+  color: var(--accent);
+}
+
 .cursor {
   display: inline-block;
   margin-left: 3px;
