@@ -1,227 +1,362 @@
 title: Minimal Container Runtime
 image: images/projects/MinimalContainerRuntime/cover.jpeg
-description: A from-scratch container runtime written in Bash. It builds an isolated, network-connected
-container out of raw Linux primitives such as namespaces, `pivot_root`, veth pairs, a bridge,
-`iptables` NAT, and cgroup v2 resource limits, without Docker, `runc`, or any container tooling.
-The goal is pedagogical: every mechanism a real runtime hides behind a daemon is here in plain shell.
+description: A from-scratch container runtime written in Bash. It builds an isolated, resource-limited, network-connected container out of raw Linux primitives such as namespaces, `pivot_root`, veth pairs, a bridge, `iptables` NAT and cgroup v2, without Docker, `runc`, or any container tooling. The result is an isolated Alpine shell with internet access: a lightweight throwaway box you can start with one command. Every mechanism a real runtime hides behind a daemon is here in plain shell.
 link: https://github.com/fyodor-eul/minimal-container-runtime
+
+## What this project offers
+
+Two commands give you a fresh Linux box:
+
+```bash
+./conruntime create mycon1
+./conruntime start mycon1
+```
+
+You land in a root shell inside an Alpine container. It has its own processes, its own filesystem
+and its own network, and it can still reach the internet:
+
+```sh
+/ # id
+uid=0(root) gid=0(root)
+/ # ps
+PID   USER     TIME  COMMAND
+    1 root      0:00 /bin/sh
+    2 root      0:00 ps
+/ # ip -4 addr show mycon1-ns
+    inet 10.0.0.2/24 scope global mycon1-ns
+/ # apk add curl
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.19/main/x86_64/APKINDEX.tar.gz
+…
+OK: … MiB in … packages
+```
+
+What makes it useful as a quick box:
+
+- **Isolated:** the shell is PID 1 and sees only its own processes. Its filesystem is the Alpine
+  rootfs, not your host's.
+- **Online:** packages install with `apk`, and anything else that needs the network just works.
+- **Safe to break:** you are root inside, but your normal user outside. Installing packages or
+  deleting files only affects the container's rootfs.
+- **Limited:** at most 256 MB of memory, 64 processes and half a CPU, so a runaway command can't
+  take down the host.
+- **Disposable:** `exit` stops it, and `./conruntime remove mycon1` deletes it.
+
+Typical uses: trying a package or command without touching your system, testing networking from a
+clean environment, or a scratch box for experiments.
+
+---
 
 ## Overview
 
-The runtime is a single script that supports six actions:
+The runtime is a single script, `conruntime`, with these actions:
 
 | Action | Purpose |
 |--------|---------|
-| `install` | One-time host setup: create the bridge, enable NAT, and prepare the parent cgroup. |
-| `uninstall` | Tear down the host-level setup: the NAT rule, the bridge, and the parent cgroup. |
-| `create` | Download and extract a fresh Alpine rootfs for a new container. |
-| `start` | Launch the container: cgroup limits, namespaces, networking, `pivot_root`, drop into a shell. |
-| `remove` | Tear down a container's veth, cgroup, mounts, and directory. |
-| `init` | Internal entry point re-executed inside the new namespaces (not called directly by the user). |
+| `install` | One-time host setup: bridge, IP forwarding, NAT rule, and the parent cgroup. |
+| `create <name>` | Download the Alpine rootfs and extract it for a new container. |
+| `start <name>` | Launch the container: cgroup, namespaces, networking, `pivot_root`, then a shell. |
+| `remove <name>` | Delete a stopped container: leftover veth, mounts, cgroup, and its directory. |
+| `uninstall` | Undo `install`: remove the NAT rule, the bridge, and the parent cgroup. |
+| `init` | Internal entry point re-executed inside the new namespaces (not called by the user). |
 
-Each container lives under `$HOME/.conruntime/<container-name>/` with its own `rootfs`,
-`basefs.tar.gz` (its own downloaded copy, not shared with other containers), a `.pid` file, a
-`network-ready` named pipe used to synchronize with the host, and a `logs/helper.log` from the
-background networking setup. Resource limits live outside that directory, in a per-container
-cgroup under `/sys/fs/cgroup/conruntime/`.
+Each container lives under `$HOME/.conruntime/<name>/`:
 
-![Overview: container isolated from host via namespaces, connected to the internet through a bridge and NAT](images/projects/MinimalContainerRuntime/image1-bridge-topology.png)
+```
+~/.conruntime/<name>/
+├── rootfs/          # Alpine filesystem
+├── basefs.tar.gz    # downloaded image
+├── .pid             # PID of the running container's unshare process
+├── network-ready    # FIFO used to synchronize startup
+└── logs/helper.log  # output of the network helper
+```
+
+![Overview: the startup sequence in the middle, linked to the cgroup, user namespace, process tree and network pieces each step sets up](images/projects/MinimalContainerRuntime/image0-overview.png)
 
 ---
 
 ## Requirements
 
-- Linux kernel with user, mount, PID, IPC, UTS, and network namespace support, plus cgroup v2
-  with the `cpu`, `memory`, and `pids` controllers available.
-- `unshare`, `nsenter`, `ip`, `iptables`, `tar`, `curl` available on the host.
-- An entry for your user in `/etc/subuid` and `/etc/subgid` (see below).
-- `sudo` for the host-side setup (bridge, veth, `iptables`, cgroups). The container process
-  itself runs unprivileged inside a user namespace.
+- Linux with user, mount, PID, IPC, UTS and network namespace support.
+- cgroup v2 (`stat -fc %T /sys/fs/cgroup` prints `cgroup2fs`).
+- `util-linux` 2.38+ (for `unshare --map-users` / `--map-groups`), plus `nsenter`.
+- `ip`, `iptables`, `curl`, `tar` on the host.
+- An entry for your user in `/etc/subuid` and `/etc/subgid`.
+- `sudo` for host-side setup (bridge, veth, `iptables`, `sysctl`, cgroups). The container
+  process itself runs unprivileged inside a user namespace.
 
 ---
 
 ## Usage
 
 ```bash
-# One-time: set up the host bridge, NAT, and the parent cgroup
+# One-time host setup: bridge, NAT, parent cgroup
 ./conruntime install
 
-# Download and extract a fresh rootfs for this container
-./conruntime create mycontainer
+# Create a container (downloads and extracts Alpine)
+./conruntime create mycon1
 
-# Start the container and drop into a shell
-./conruntime start mycontainer
+# Start it and drop into a shell
+./conruntime start mycon1
 
-# Remove it when done (must be exited first)
-./conruntime remove mycontainer
+# Remove it when done (exit its shell first)
+./conruntime remove mycon1
 
-# Tear down the host-level setup entirely
+# Undo the host setup
 ./conruntime uninstall
 ```
 
-Inside the container you land on `/bin/sh` with `HOME=/root`, an isolated process tree,
-and outbound internet through the host.
+Container names are 1–12 characters: letters, digits, `_` or `-`. The limit exists because the
+veth names are `<name>-ns` and `<name>-br`, and Linux interface names are at most 15 characters.
+
+Inside the container you land on `/bin/sh` as root, with `HOME=/root`, an isolated process tree,
+resource limits, and outbound internet through the host.
 
 ---
 
 ## Architecture
 
-The design mirrors what Docker does, decomposed into its constituent syscalls and commands:
+The design mirrors what Docker does, decomposed into its underlying commands:
 
-- **Isolation** comes from a bundle of namespaces created in a single `unshare` call
-  (`--mount --pid --fork --net --uts --ipc --user`).
+- **Isolation** comes from one `unshare` call that creates six namespaces: `--mount --pid --fork --net --uts --ipc --user`.
 - **Filesystem** isolation is completed by `pivot_root` into the extracted Alpine rootfs.
-- **Networking** uses a persistent host bridge (`myconbr0`) with a per-container veth pair;
-  the host masquerades container traffic out through a fixed outbound interface (`wlan0`).
-- **Privilege** is handled by a user namespace that maps the caller to root *inside* the
-  container while mapping a `/etc/subuid` range for everything else.
-- **Resource limits** come from a cgroup v2 hierarchy: the invoking process is placed into a
-  per-container cgroup (capped on memory, PIDs, and CPU) *before* it unshares, so the limits
-  apply to the whole process tree from the start.
+- **Privilege** is handled by the user namespace: your user becomes root *inside* the container, and a range from `/etc/subuid` covers every other UID.
+- **Networking** uses a persistent host bridge (`myconbr0`) with a per-container veth pair; the host masquerades container traffic out through `wlan0`.
+- **Resource limits** come from a per-container cgroup v2 group that caps memory, process count and CPU.
+
+The script runs as three cooperating processes during startup:
+
+| Process | Role |
+|---------|------|
+| Host script | Becomes `unshare` (same PID) and stays alive as the container's parent. |
+| Network helper (`setup_netns`) | Runs in the background with `sudo`, wires the veth into the container's network namespace, then exits. |
+| Container init (`ns_init`) | PID 1 inside the new namespaces. Waits for the helper, sets up the filesystem, then becomes `/bin/sh`. |
+
+The helper and the container never share variables. Their only communication is one line written
+through a FIFO: `ready` or `failed`.
 
 ---
 
 ## How it works
 
-### 1. Root filesystem creation
+The sections follow the order of `start`.
 
-`create` validates the container name (`^[a-zA-Z0-9_-]{1,12}$`), refuses to continue if a
-container with that name already exists, then downloads the Alpine `minirootfs` tarball
-(v3.19.1, x86_64) straight into that container's own directory as `basefs.tar.gz` and extracts
-it into `rootfs/`. There's no shared cache between containers: each `create` downloads its own
-copy, and a failed download or extraction removes the partial `rootfs/` it made.
+### 1. Root filesystem (`create`)
+
+`create` validates the name, refuses if the container already exists, downloads the Alpine
+`minirootfs` tarball (v3.19.1, x86_64) to `basefs.tar.gz`, and extracts it into `rootfs/`.
+If the download or extraction fails, the half-built `rootfs/` is removed.
 
 ```bash
-IMAGE_URL='https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz'
+readonly IMAGE_URL='https://dl-cdn.alpinelinux.org/alpine/v3.19/releases/x86_64/alpine-minirootfs-3.19.1-x86_64.tar.gz'
 ```
 
-### 2. User namespace and UID/GID mapping
+### 2. Startup and the FIFO
 
-The container runs in a **user namespace** (`--user`), so no real root is required on the
-host. The mapping is built from two sources:
-
-- The caller's own UID/GID is mapped to `0` inside the namespace (one ID):
-  `--map-users="$(id -u)",0,1` and `--map-groups="$(id -g)",0,1`.
-- A delegated range from `/etc/subuid` / `/etc/subgid` is mapped starting at inside-ID `1`,
-  covering the remaining IDs the rootfs needs.
-
-The script parses those files directly and aborts if no delegation exists:
+`start` first records its own PID and creates a named pipe:
 
 ```bash
-subuid_id=$(cat /etc/subuid | grep "^$USER:" | cut -d: -f2)
-subuid_count=$(cat /etc/subuid | grep "^$USER:" | cut -d: -f3)
-# ...
+echo "$$" >"$conpid_file"
+rm -f "$fifo" && mkfifo "$fifo"
+```
+
+It then refreshes the `sudo` timestamp (so the background helper can use `sudo -n` without a
+password prompt) and starts the network helper in the background:
+
+```bash
+sudo -v
+(setup_netns "$con_name" "$$" "$fifo" >"$BASE_DIR/$con_name/logs/helper.log" 2>&1 &)
+```
+
+The `( … & )` form runs the helper in a subshell that exits immediately, so the helper is adopted
+by the host's init (systemd) rather than staying a child of the script.
+
+A FIFO is used because reading from it **blocks** until someone writes. The container can simply
+`read` from it and is guaranteed not to continue before the network is ready.
+
+![Startup sequence: host script, network helper and container init; the only message between helper and container goes through the FIFO](images/projects/MinimalContainerRuntime/image1-startup-sequence.png)
+
+### 3. Resource limits (cgroup v2)
+
+`install` creates a parent cgroup and enables the controllers its children may use:
+
+```bash
+sudo mkdir -p "$CG_ROOT"
+echo '+cpu +memory +pids' | sudo tee /sys/fs/cgroup/cgroup.subtree_control >/dev/null
+echo '+cpu +memory +pids' | sudo tee "$CG_ROOT"/cgroup.subtree_control >/dev/null
+```
+
+A controller is only usable in a cgroup if its parent lists it in `cgroup.subtree_control`, so it
+is enabled at the root and in `conruntime/`.
+
+`start` then creates the container's own cgroup, writes the limits, and moves the script into it,
+right before `exec unshare`:
+
+```bash
+sudo mkdir -p "$cg"
+echo "$MEM_MAX"  | sudo tee "$cg/memory.max"   >/dev/null   # 256M
+echo "$PIDS_MAX" | sudo tee "$cg/pids.max"     >/dev/null   # 64
+echo "$CPU_MAX"  | sudo tee "$cg/cpu.max"      >/dev/null   # 50000 100000 = half a CPU
+echo "$$"        | sudo tee "$cg/cgroup.procs" >/dev/null
+```
+
+Joining at this point is what makes the limits cover the whole container. Children inherit their parent's cgroup, and `exec` keeps the same PID, so `unshare`, the container's PID 1, and everything it starts all land in `conruntime/<name>`. The helper was started earlier, so it stays outside.
+
+```
+/sys/fs/cgroup/conruntime/
+├── cgroup.subtree_control   +cpu +memory +pids
+└── mycon1/
+    ├── cgroup.procs         the container's PIDs
+    ├── memory.max           256M
+    ├── pids.max             64
+    ├── cpu.max              50000 100000
+    └── memory.current, pids.current, …
+```
+
+Usage can be checked from the host:
+
+```bash
+cat /sys/fs/cgroup/conruntime/mycon1/memory.current
+cat /sys/fs/cgroup/conruntime/mycon1/pids.current
+```
+
+### 4. User namespace and UID/GID mapping
+
+The container runs in a **user namespace** (`--user`), so no real root is required on the host.
+The mapping has two parts:
+
+- Your own UID/GID becomes `0` inside the namespace (exactly one ID):
+  `--map-users=$(id -u),0,1` and `--map-groups=$(id -g),0,1`.
+- Your delegated range from `/etc/subuid` / `/etc/subgid` is mapped starting at container ID `1`.
+
+The script reads those files and aborts if no delegation exists:
+
+```bash
+local subuid_id=$(cat /etc/subuid | grep "^$USER:" | cut -d: -f2)
+local subuid_count=$(cat /etc/subuid | grep "^$USER:" | cut -d: -f3)
+# … same for /etc/subgid
 if [[ -z "$subuid_id" || -z "$subgid_id" ]]; then
   echo "[-] No /etc/subuid or /etc/subgid entry" >&2
   exit 1
 fi
 ```
 
-Conceptually, host ID ranges are projected onto a contiguous range inside the namespace:
-the caller becomes `0`, and the delegated block becomes `1 .. count`.
+For example, with UID 1000 and `ropper:10000:65536`:
 
-![UID/GID mapping: host subuid/subgid ranges projected into the container's user namespace](images/projects/MinimalContainerRuntime/image2-uid-gid-mapping.png)
+| Host UIDs | Container UIDs | Count |
+|-----------|----------------|-------|
+| 1000 | 0 (root) | 1 |
+| 10000 – 75535 | 1 – 65536 | 65536 |
 
-### 3. Resource limits via cgroups
+Container UID *N* (for *N* ≥ 1) is host UID 10000 + (*N* − 1). This can be confirmed from inside
+the container:
 
-Before `start` ever calls `unshare`, it creates a per-container cgroup under the parent cgroup
-that `install` set up, writes its memory, PID, and CPU limits, then adds the current shell to
-it:
-
-```bash
-sudo mkdir -p "$cg"
-echo "$MEM_MAX"  | sudo tee "$cg/memory.max"   >/dev/null   # 256M
-echo "$PIDS_MAX" | sudo tee "$cg/pids.max"     >/dev/null   # 64
-echo "$CPU_MAX"  | sudo tee "$cg/cpu.max"      >/dev/null   # 50000 100000 (~half a core)
-echo "$$"        | sudo tee "$cg/cgroup.procs" >/dev/null
+```sh
+cat /proc/self/uid_map
+#          0       1000          1
+#          1      10000      65536
 ```
 
-Because this happens before `unshare` runs, the limits apply to the whole process tree the
-container goes on to spawn, not just the final shell. The container doesn't get its own cgroup
-namespace (there's no `--cgroup` in the `unshare` call below); confinement is enforced purely
-from the host-side cgroup hierarchy.
+![UID/GID mapping: host UID 1000 becomes root, and the subuid range becomes container UIDs 1 to 65536](images/projects/MinimalContainerRuntime/image2-user-namespace.png){width=50%}
 
-### 4. PID namespace and the fork dance
+### 5. PID namespace, `exec`, and `--fork`
 
-`start` records its own PID (`$$`) into `.pid`, then `exec`s straight into `unshare`:
+The script replaces itself with `unshare`:
 
 ```bash
 exec unshare \
   --mount --pid --fork \
   --net --uts --ipc \
   --user \
-  --map-users="$(id -u)",0,1  --map-users="$subuid_id",1,"$subuid_count" \
-  --map-groups="$(id -g)",0,1 --map-groups="$subgid_id",1,"$subgid_count" \
+  --map-users="$(id -u)",0,1 \
+  --map-users="$subuid_id",1,"$subuid_count" \
+  --map-groups="$(id -g)",0,1 \
+  --map-groups="$subgid_id",1,"$subgid_count" \
   "$0" init "$con_name" "$fifo"
 ```
 
-Because `exec` replaces the process image instead of forking, `unshare` inherits the exact PID
-that was just written to `.pid`. The mount, network, UTS, IPC, and user namespaces take effect
-immediately for that process. The PID namespace is the exception: a new PID namespace only
-takes effect for **children** of the process that created it, which is exactly what `--fork`
-is for — it forks a child that becomes PID 1 inside the new namespace and re-execs the script
-as `init`, the container's entry point.
+Two details make this work:
 
-The PID recorded in `.pid` is therefore the *outer* `unshare` process, still visible from the
-host's own PID namespace. `setup_netns` uses that PID as the `nsenter` target when wiring up
-networking, and `remove` later uses it to refuse deleting a still-running container.
+- **`exec` keeps the PID.** The script's PID (written to `.pid`, already in the cgroup) becomes
+  `unshare`'s PID. No new process is created.
+- **`--fork` is required for the PID namespace.** `unshare --pid` does not move the caller into the
+  new PID namespace; only its children enter it. So `unshare` forks a child, which becomes PID 1
+  and re-runs the script as `init`. `unshare` itself just waits for that child.
 
-![PID namespace: unshare --fork creates a new namespace and forks the child in as PID 1](images/projects/MinimalContainerRuntime/image3-pid-namespace.png)
+The other namespaces (mount, net, uts, ipc, user) do apply to `unshare` itself. That's why the
+helper can watch `/proc/<pid>/ns/net` change.
 
-### 5. Networking: bridge, veth, and synchronization
+```
+bash (your terminal)
+└── 5000  unshare                 waits for its child
+    └── 5001  ns_init → /bin/sh   PID 1 inside the container
+        ├── 5002  sleep 100       PID 2 inside
+        └── 5003  apk add curl    PID 3 inside
 
-Networking is split between a **once-per-host** setup and a **per-container** setup, and the
-two sides of the per-container setup synchronize over a named pipe.
+systemd (host init)
+└── setup_netns                   orphan, exits after network setup
+```
 
-**Host setup** (`setup_runtime`, run during `install`):
+![PID namespace: unshare creates the namespace, and the next child forked becomes PID 1 inside it](images/projects/MinimalContainerRuntime/image3-pid-namespace.png){width=70%}
 
-- Creates the bridge `myconbr0` with address `10.0.0.1/24` and brings it up.
+### 6. Networking: bridge, veth, and NAT
+
+Networking is split between **once-per-host** setup and **per-container** setup.
+
+**Host setup** (`install`):
+
+- Creates the bridge `myconbr0`, assigns `10.0.0.1/24` and brings it up.
 - Enables IPv4 forwarding (`sysctl -qw net.ipv4.ip_forward=1`).
-- Adds a `MASQUERADE` rule for the `10.0.0.0/24` subnet out `wlan0`, so container traffic is
-  NATed onto the real network. Both the bridge and the rule are created idempotently
-  (existence is checked first).
+- Adds a `MASQUERADE` rule for `10.0.0.0/24` out of `wlan0`. Both the bridge and the rule are
+  checked first, so running `install` twice is safe.
 
 ```bash
 sudo iptables -t nat -A POSTROUTING -s "$SUBNET" -o "$OUT_IFACE" -j MASQUERADE
 ```
 
-**Per-container setup** (`setup_netns`, backgrounded by `start` before it `exec`s into
-`unshare`):
+**Per-container setup** (`setup_netns`, the background helper):
 
-- Creates a veth pair (`<name>-ns` / `<name>-br`) and attaches the `-br` end to `myconbr0`.
-- Polls `/proc/<pid>/ns/net` against the host's own network namespace in a `sleep 0.05` loop,
-  waiting until the `start` process has actually unshared its network namespace.
-- Once that happens: moves the `-ns` end into that namespace, assigns it `10.0.0.2/24`, brings
-  the veth and loopback up, adds a default route via `10.0.0.1`, and brings the bridge-side
-  veth up on the host.
-- Writes `ready` (or `failed`, if any step above failed) into the `network-ready` named pipe.
+1. Creates a veth pair `<name>-ns` ↔ `<name>-br` and attaches `<name>-br` to `myconbr0`.
+2. Polls until the container's network namespace exists, by comparing `/proc/<pid>/ns/net` with its own:
+   ```bash
+   host_netns=$(readlink /proc/self/ns/net)
+   while [[ $(readlink /proc/"$con_pid"/ns/net) == "$host_netns" ]]; do
+     sleep 0.05
+   done
+   ```
+3. Moves `<name>-ns` into that namespace and configures it with `nsenter`: address `10.0.0.2/24`,
+   link and loopback up, default route via `10.0.0.1`. Then it brings `<name>-br` up.
+4. Writes `ready` to the FIFO, or `failed` if any step failed, and exits.
 
-On the container side, `init` blocks on `read -r status < "$fifo"` before doing anything else,
-and aborts if the status isn't `ready` — so a failed network setup stops the container before
-it ever reaches `pivot_root`, instead of silently continuing without connectivity.
+Because the container's default route points at the bridge and the host masquerades the subnet,
+the container reaches the internet like any host behind a NAT router.
 
-Because the container's default route points at `myconbr0` and the host masquerades the
-subnet, the container reaches the internet exactly as any bridged host would.
+![Network topology: host bridge myconbr0, the container's veth pair, and MASQUERADE NAT out of wlan0](images/projects/MinimalContainerRuntime/image4-bridge-nat.png)
 
-![Network topology: host bridge, per-container veth pairs, and MASQUERADE NAT to the internet](images/projects/MinimalContainerRuntime/image1-bridge-topology.png)
+The NAT itself hooks into netfilter. Container packets are forwarded through the host and their
+source address is rewritten at `POSTROUTING`, where the `MASQUERADE` target lives:
 
-The NAT itself hooks into the kernel's netfilter chain. Outbound container packets are routed
-"through us" and rewritten at `POSTROUTING`, which is where the `MASQUERADE` target lives:
+![Netfilter hooks: packets traverse PREROUTING, the routing decision, FORWARD, and POSTROUTING where MASQUERADE rewrites the source](images/projects/MinimalContainerRuntime/image5-netfilter-hooks.png)
 
-![Netfilter hooks: packets traverse PREROUTING, the routing decision, FORWARD, and POSTROUTING where MASQUERADE rewrites the source](images/projects/MinimalContainerRuntime/image4-netfilter-hooks.png)
+### 7. Filesystem isolation with `pivot_root` (`init`)
 
-### 6. Filesystem isolation with pivot_root
+The container's PID 1 starts by blocking on the FIFO, and stops if the helper reports a failure:
 
-Once `init` reads `ready` from the named pipe, it:
+```bash
+read -r status <"$fifo"
+if [[ "$status" != 'ready' ]]; then
+  echo "[-] Network setup failed!" >&2
+  exit 1
+fi
+```
 
-1. Marks the mount tree private (`mount --make-rprivate /`) so mount events don't leak back
-   to the host.
+It then:
+
+1. Marks the mount tree private, so mount events don't propagate back to the host.
 2. Mounts a fresh `proc` and `sysfs` into the rootfs.
-3. Bind-mounts the rootfs onto itself (a `pivot_root` requirement) and `pivot_root`s into it,
-   moving the old root aside to `.oldroot`.
-4. Resets `PATH` and rehashes (`hash -r`), then lazily unmounts and removes `.oldroot`, fully
-   detaching the container from the host filesystem.
-5. Sets `HOME=/root` and `exec /bin/sh` to hand control to the container's shell as PID 1.
+3. Bind-mounts the rootfs onto itself (`pivot_root` requires the new root to be a mount point).
+4. `pivot_root`s into it, moving the old root to `/.oldroot`.
+5. Resets `PATH`, lazily unmounts and removes `/.oldroot`, fully detaching the host filesystem.
+6. `exec /bin/sh`, so the shell takes over as PID 1.
 
 ```bash
 mount --make-rprivate /
@@ -241,37 +376,46 @@ exec /bin/sh
 
 ---
 
-## Teardown
+## Exit and teardown
 
-`remove`:
+### What happens when the shell exits
 
-1. Refuses to delete a container whose PID (from `.pid`) is still alive.
-2. Deletes the host-side veth if present (removing one end removes the pair).
-3. Recursively and lazily unmounts any stale mounts left under `rootfs` (`umount -Rl`).
-4. Removes the container's cgroup directory.
+When you type `exit`, PID 1 ends, and the kernel cleans up almost everything by itself:
+
+1. Every remaining process in the PID namespace is killed (`SIGKILL`).
+2. The network namespace is destroyed. Its veth end is deleted, which also deletes the peer
+   `<name>-br` on the bridge.
+3. The mount namespace goes away, taking `proc`, `sys` and the bind mount with it.
+4. The kernel notifies the parent. `unshare`'s wait returns, it exits with the shell's exit code,
+   and your prompt comes back.
+
+What the kernel does **not** remove: files and directories. The `.pid` file, the now-empty cgroup
+directory, and the rootfs stay until `remove`.
+
+### `remove`
+
+1. Refuses if the PID in `.pid` is still alive (`kill -0`).
+2. Deletes `<name>-br` if it still exists. Normally the kernel already removed it; this covers a
+   startup that crashed halfway.
+3. Lazily unmounts any stale mounts under `rootfs`.
+4. Removes the cgroup with `rmdir`. Cgroups are always removed this way, and the kernel refuses
+   while any process is still inside.
 5. Removes the container directory.
 
-```bash
-./conruntime remove mycontainer
-```
+### `uninstall`
 
-`uninstall` goes further and tears down the host-level setup created by `install`: the NAT
-rule, the bridge, and the parent cgroup.
+Deletes the NAT rule, the bridge, and the parent cgroup.
 
 ---
 
 ## Known limitations
 
-- Networking is fixed to a single container address (`10.0.0.2/24`); running multiple
-  containers concurrently would collide on that IP. (Flagged in the script itself as needing
-  address rotation.)
-- The rootfs URL/architecture, bridge name, subnet, and outbound interface (`wlan0`) are all
-  hardcoded constants at the top of the script, not CLI flags.
-- Resource limits (256M memory, 64 PIDs, ~half a CPU core) are fixed for every container;
-  there's no per-container override.
-- `/dev` device nodes are not populated, so containers have no `/dev/null`, `/dev/urandom`,
-  etc.
-- Each `create` downloads its own copy of the rootfs tarball; there's no shared cache between
-  containers.
-- Host network and cgroup setup requires `sudo`; the bridge, NAT rule, and parent cgroup
-  persist until `uninstall` is run.
+- Every container gets `10.0.0.2/24`, so only one container can run at a time.
+- `/dev` is not populated, so containers have no `/dev/null`, `/dev/urandom`, etc.
+- The outgoing interface is hardcoded to `wlan0` (`OUT_IFACE`).
+- Only one `/etc/subuid` / `/etc/subgid` line per user is supported. With multiple lines, the
+  parsed start and count contain several values and `unshare` fails.
+- No cgroup namespace, so `/sys/fs/cgroup` inside the container doesn't show its own limits
+  (they are still enforced).
+- The rootfs URL and architecture are hardcoded to Alpine 3.19.1 x86_64.
+- Host setup requires `sudo`; the bridge, NAT rule and parent cgroup persist until `uninstall`.

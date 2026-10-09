@@ -661,6 +661,11 @@ body::before {
   margin: 0 0 10px;
 }
 
+/* Room for "1." markers so they don't hang left of the paragraph text */
+.markdown-content ol {
+  padding-left: 2.5em;
+}
+
 .markdown-content hr {
   border: none;
   border-top: 1px solid var(--border);
@@ -778,8 +783,9 @@ body::before {
   width: auto;
   height: auto;
   object-fit: contain;
+  object-position: left;
   display: block;
-  margin: 12px auto;
+  margin: 12px 0;
   border-radius: 4px;
 }
 

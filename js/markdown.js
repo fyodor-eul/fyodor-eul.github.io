@@ -11,8 +11,11 @@
   }
 
   function parseInline(text) {
-    // Images ![alt](src)
-    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img alt="$1" src="$2" />');
+    // Images ![alt](src) with optional size: ![alt](src){width=60%}
+    text = text.replace(/!\[([^\]]*)\]\(([^)]+)\)(?:\{width=([\d.]+(?:%|px)?)\})?/g, (_, alt, src, width) => {
+      const style = width ? ` style="width: ${/^\d+(\.\d+)?$/.test(width) ? width + "px" : width}"` : "";
+      return `<img alt="${alt}" src="${src}"${style} />`;
+    });
 
     // Links [text](url)
     text = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
@@ -63,12 +66,16 @@ function markdownToHtml(md) {
   const lines = md.split("\n");
   const html = [];
   let listType = null; // "ul" | "ol" | null
+  let inListItem = false;
   let inCodeBlock = false;
   let codeBuffer = [];
   let codeLang = "";
+  let codeIndent = 0; // indentation of a fence nested in a list item
 
   function closeList() {
     if (listType) {
+      if (inListItem) html.push("</li>");
+      inListItem = false;
       html.push(listType === "ul" ? "</ul>" : "</ol>");
       listType = null;
     }
@@ -100,7 +107,9 @@ function markdownToHtml(md) {
         // closing
         closeCodeBlock();
       } else {
-        // opening
+        // opening; an indented fence inside a list stays in the current item
+        codeIndent = line.match(/^\s*/)[0].length;
+        if (!(listType && codeIndent > 0)) closeList();
         inCodeBlock = true;
         codeBuffer = [];
         codeLang = fenceMatch && fenceMatch[1] ? fenceMatch[1].toLowerCase() : "";
@@ -109,7 +118,7 @@ function markdownToHtml(md) {
     }
 
     if (inCodeBlock) {
-      codeBuffer.push(line);
+      codeBuffer.push(line.replace(new RegExp(`^ {0,${codeIndent}}`), ""));
       continue;
     }
 
@@ -229,7 +238,9 @@ function markdownToHtml(md) {
         html.push("<ul>");
       }
       const itemText = line.replace(/^\s*[-*]\s+/, "");
-      html.push("<li>" + parseInline(escapeHtml(itemText)) + "</li>");
+      if (inListItem) html.push("</li>");
+      html.push("<li>" + parseInline(escapeHtml(itemText)));
+      inListItem = true;
       continue;
     }
 
@@ -241,7 +252,15 @@ function markdownToHtml(md) {
         html.push("<ol>");
       }
       const itemText = line.replace(/^\s*\d+\.\s+/, "");
-      html.push("<li>" + parseInline(escapeHtml(itemText)) + "</li>");
+      if (inListItem) html.push("</li>");
+      html.push("<li>" + parseInline(escapeHtml(itemText)));
+      inListItem = true;
+      continue;
+    }
+
+    // Indented line inside a list item: continuation of that item
+    if (inListItem && /^\s+/.test(line)) {
+      html.push(parseInline(escapeHtml(line.trim())));
       continue;
     }
 
