@@ -113,7 +113,7 @@ sudo virt-install --name control --memory 1536 --vcpus 1 \
 ```
 
 ### 4. Run the text installer
-![Serial Console](images/projects/KVMHomeServer/serial_console.png)
+![Serial Console](images/projects/KVMHomeServer/serial_console.png){width=75%}
 
 Anaconda's text installer runs inside the SSH session. For each VM, I chose:
 
