@@ -15,7 +15,8 @@ const PROJECT_FILES = [
   { file: "MinecraftServerSetupNeoForge.md" },
   { file: "SecureMemberPortal.md" },
   { file: "Starbuzz.md" },
-  { file: "MinimalContainerRuntime" }
+  { file: "MinimalContainerRuntime" },
+  { file: "KVMHomeServer.md" }
 ];
 
 document.addEventListener("DOMContentLoaded", () => {
