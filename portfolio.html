@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Portfolio | Thiha Htoo Zin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script>document.documentElement.classList.add("js");</script>
+  <style>
+    /* ===== Portfolio page ================================================ */
+    .pf {
+      --pf-sans: "Inter", "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+      font-family: var(--pf-sans);
+      line-height: 1.6;
+    }
+    .pf a { color: var(--blue); text-decoration: none; }
+    .pf a:hover { text-decoration: underline; }
+    .pf img { display: block; max-width: 100%; }
+
+    .pf-panel {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 22px;
+      scroll-margin-top: 130px;
+    }
+
+    /* Section headings */
+    .pf-h2 {
+      display: flex; align-items: center; gap: 12px;
+      margin: 0 0 22px; font-size: 0.8rem; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: 0.14em;
+    }
+    .pf-h2::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .pf-h2 .pf-num { font-family: var(--font-mono); color: var(--warning); letter-spacing: 0; }
+
+    /* ----- Hero ----- */
+    .pf-hero { display: flex; gap: 28px; align-items: center; }
+    .pf-avatar {
+      flex: 0 0 128px; height: 128px; border-radius: 50%; overflow: hidden;
+      border: 3px solid var(--bg1); box-shadow: 0 0 0 1px var(--border);
+    }
+    .pf-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .pf-eyebrow { font-family: var(--font-mono); font-size: 0.78rem; color: var(--success); margin: 0 0 4px; }
+    .pf-name { margin: 0; font-size: 2.2rem; line-height: 1.15; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .pf-role { margin: 6px 0 14px; color: var(--muted); font-size: 1.02rem; }
+    .pf-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pf-btn {
+      font-family: var(--font-mono); font-size: 0.78rem;
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 6px 12px; color: var(--text) !important; background: var(--bg-soft);
+      transition: border-color .15s, transform .15s;
+    }
+    .pf-btn:hover { border-color: var(--muted); transform: translateY(-1px); text-decoration: none !important; }
+
+    .pf-stats {
+      display: grid; grid-template-columns: repeat(4, 1fr);
+      margin-top: 26px; border-top: 1px solid var(--border); padding-top: 20px;
+    }
+    .pf-stat { text-align: center; border-left: 1px solid var(--border); padding: 0 8px; }
+    .pf-stat:first-child { border-left: none; }
+    .pf-stat b { display: block; font-size: 1.6rem; line-height: 1.2; color: var(--text); }
+    .pf-stat span { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+    /* ----- Sticky section nav ----- */
+    .pf-toc {
+      position: sticky; top: 52px; z-index: 5;
+      display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+      padding: 10px 0; margin: 0 0 18px;
+      background: linear-gradient(var(--bg) 75%, transparent);
+    }
+    .pf-toc::-webkit-scrollbar { display: none; }
+    .pf-toc a {
+      flex: 0 0 auto; font-family: var(--font-mono); font-size: 0.76rem;
+      color: var(--muted) !important; padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--bg-alt); transition: all .15s;
+    }
+    .pf-toc a:hover { color: var(--text) !important; text-decoration: none; }
+    .pf-toc a.on { color: var(--bg-alt) !important; background: var(--text); border-color: var(--text); }
+
+    /* ----- Shared bits ----- */
+    .pf-when { font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); white-space: nowrap; }
+    .pf-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+    .pf-tag {
+      font-family: var(--font-mono); font-size: 0.7rem; color: var(--blue);
+      border: 1px solid var(--border); border-radius: 999px; padding: 2px 9px;
+    }
+    .pf-tag.skill { color: var(--purple); }
+    .pf-todo { color: var(--warning); }
+    .pf-zoom { cursor: zoom-in; }
+
+    /* ----- Education timeline ----- */
+    .pf-timeline { position: relative; margin-left: 6px; padding-left: 26px; border-left: 2px solid var(--border); }
+    .pf-tl-item { position: relative; padding-bottom: 22px; }
+    .pf-tl-item:last-child { padding-bottom: 0; }
+    .pf-tl-item::before {
+      content: ""; position: absolute; left: -33px; top: 6px; width: 12px; height: 12px;
+      border-radius: 50%; background: var(--bg-alt); border: 2px solid var(--muted);
+    }
+    .pf-tl-item.now::before { border-color: var(--success); background: var(--success); }
+    .pf-tl-head { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; flex-wrap: wrap; }
+    .pf-tl-item h3 { margin: 0; font-size: 1.05rem; color: var(--text); }
+    .pf-tl-item p { margin: 2px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .pf-modules { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+
+    /* ----- Certifications ----- */
+    .pf-certs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .pf-cert {
+      background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px;
+      padding: 18px; display: flex; flex-direction: column; align-items: center; text-align: center;
+      transition: transform .2s, border-color .2s;
+    }
+    .pf-cert:hover { transform: translateY(-3px); border-color: var(--muted); }
+    .pf-cert-img { width: 132px; height: 132px; margin-bottom: 14px; display: flex; align-items: center; justify-content: center; }
+    .pf-cert-img img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: 6px; }
+    .pf-cert h3 { margin: 0; font-size: 0.98rem; color: var(--text); }
+    .pf-cert p { margin: 4px 0 0; font-size: 0.82rem; color: var(--muted); }
+    .pf-cert .pf-verify { margin-top: 10px; font-family: var(--font-mono); font-size: 0.76rem; }
+
+    /* ----- Awards ----- */
+    .pf-awards { display: grid; grid-template-columns: 1.6fr 1fr; gap: 16px; align-items: start; }
+    .pf-award { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+    .pf-award-media { aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg); }
+    .pf-award-media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s; }
+    .pf-award:hover .pf-award-media img { transform: scale(1.03); }
+    .pf-award-body { padding: 16px 18px; }
+    .pf-award h3 { margin: 0; font-size: 1.05rem; color: var(--text); }
+    .pf-award p { margin: 4px 0 0; color: var(--muted); font-size: 0.88rem; }
+    .pf-award-icon {
+      flex: 1; min-height: 140px; display: flex; align-items: center; justify-content: center;
+      font-family: var(--font-mono); font-size: 2.6rem; color: var(--warning); background: var(--bg);
+    }
+    .pf-award-stack { display: grid; gap: 16px; }
+    .pf-award-photo .pf-award-media { aspect-ratio: 1 / 1; }
+
+    /* ----- Feature blocks (competitions) ----- */
+    .pf-feature { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: start; }
+    .pf-feature + .pf-feature { margin-top: 34px; padding-top: 34px; border-top: 1px solid var(--border); }
+    .pf-feature.flip .pf-gallery { order: 2; }
+    .pf-feature h3 { margin: 0; font-size: 1.35rem; color: var(--text); letter-spacing: -0.01em; }
+    .pf-event { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .pf-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 12px 0; font-family: var(--font-mono); font-size: 0.76rem; color: var(--muted); }
+    .pf-meta b { color: var(--text); font-weight: 500; }
+    .pf-feature ul { margin: 0; padding-left: 18px; font-size: 0.92rem; }
+    .pf-feature li { margin: 5px 0; }
+    .pf-quote {
+      margin: 14px 0 0; padding: 10px 14px; border-left: 3px solid var(--warning);
+      background: var(--bg-soft); border-radius: 0 8px 8px 0; font-size: 0.88rem; color: var(--text);
+    }
+    .pf-quote b { color: var(--warning); }
+
+    /* Gallery: one main image + thumbnails */
+    .pf-gallery-main {
+      position: relative; aspect-ratio: 16 / 10; border-radius: 10px; overflow: hidden;
+      border: 1px solid var(--border); background: var(--bg);
+    }
+    .pf-gallery-main img { width: 100%; height: 100%; object-fit: cover; transition: opacity .25s; }
+    .pf-gallery-main img.contain { object-fit: contain; }
+    .pf-gallery-main .pf-cap {
+      position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 12px 8px;
+      font-size: 0.76rem; color: #ebdbb2; background: linear-gradient(transparent, rgba(0,0,0,.75));
+    }
+    .pf-thumbs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 8px; }
+    .pf-thumbs button {
+      padding: 0; border: 2px solid transparent; border-radius: 6px; overflow: hidden;
+      aspect-ratio: 16 / 10; background: var(--bg); cursor: pointer; opacity: .55; transition: opacity .15s, border-color .15s;
+    }
+    .pf-thumbs button:hover { opacity: .9; }
+    .pf-thumbs button.on { opacity: 1; border-color: var(--text); }
+    .pf-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+
+    /* ----- Projects ----- */
+    .pf-projects { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+    .pf-proj {
+      background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+      display: flex; flex-direction: column; color: inherit !important; transition: transform .2s, border-color .2s;
+    }
+    .pf-proj:hover { transform: translateY(-3px); border-color: var(--muted); text-decoration: none !important; }
+    .pf-proj-img { aspect-ratio: 16 / 10; overflow: hidden; background: var(--bg); }
+    .pf-proj-img img { width: 100%; height: 100%; object-fit: cover; }
+    .pf-proj-body { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
+    .pf-proj-kind { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .pf-proj h3 { margin: 4px 0 6px; font-size: 1.02rem; color: var(--text); }
+    .pf-proj p { margin: 0; font-size: 0.86rem; color: var(--muted); flex: 1; }
+    .pf-proj .pf-more { margin-top: 10px; font-family: var(--font-mono); font-size: 0.76rem; color: var(--blue); }
+
+    /* ----- CCA ----- */
+    .pf-cca { display: grid; grid-template-columns: 300px 1fr; gap: 28px; align-items: start; }
+    .pf-cca-img { border-radius: 10px; overflow: hidden; border: 1px solid var(--border); aspect-ratio: 1 / 1; }
+    .pf-cca-img img { width: 100%; height: 100%; object-fit: cover; }
+    .pf-cca h3 { margin: 0; font-size: 1.25rem; color: var(--text); }
+    .pf-cca ul { padding-left: 18px; font-size: 0.92rem; }
+    .pf-figure-cap { margin-top: 6px; font-size: 0.76rem; color: var(--muted); }
+
+    /* ----- Skills ----- */
+    .pf-skills { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .pf-skillbox { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+    .pf-skillbox h3 { margin: 0 0 10px; font-size: 0.95rem; color: var(--text); }
+    .pf-skillbox ul { margin: 0; padding: 0; list-style: none; font-size: 0.9rem; }
+    .pf-skillbox li { padding: 6px 0; border-top: 1px solid rgba(80,73,69,.5); color: var(--muted); }
+    .pf-skillbox li:first-child { border-top: none; }
+    .pf-skillbox li b { color: var(--text); font-weight: 600; }
+
+    /* ----- Lightbox ----- */
+    .pf-lightbox {
+      position: fixed; inset: 0; z-index: 100; align-items: center; justify-content: center;
+      background: rgba(10, 10, 10, 0.92); padding: 24px; cursor: zoom-out;
+    }
+    .pf-lightbox img { max-width: 95vw; max-height: 88vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,.6); }
+    .pf-lightbox p { position: absolute; bottom: 18px; left: 0; right: 0; text-align: center; color: #ebdbb2; font-size: 0.85rem; margin: 0; }
+
+    /* ----- Reveal on scroll (only when JS runs) ----- */
+    .js .pf-reveal { opacity: 0; transform: translateY(14px); transition: opacity .5s ease, transform .5s ease; }
+    .js .pf-reveal.seen { opacity: 1; transform: none; }
+    @media (prefers-reduced-motion: reduce) {
+      .js .pf-reveal { opacity: 1; transform: none; transition: none; }
+      .pf *, .pf *::before { transition: none !important; }
+    }
+
+    /* ----- Responsive ----- */
+    @media (max-width: 900px) {
+      .pf-feature, .pf-awards, .pf-cca { grid-template-columns: 1fr; }
+      .pf-feature.flip .pf-gallery { order: 0; }
+      .pf-projects, .pf-certs { grid-template-columns: repeat(2, 1fr); }
+      .pf-cca-img { aspect-ratio: 16 / 10; }
+    }
+    @media (max-width: 600px) {
+      .pf-panel { padding: 20px 18px; }
+      .pf-hero { flex-direction: column; text-align: center; }
+      .pf-actions { justify-content: center; }
+      .pf-name { font-size: 1.8rem; }
+      .pf-stats { grid-template-columns: repeat(2, 1fr); row-gap: 16px; }
+      .pf-stat:nth-child(3) { border-left: none; }
+      .pf-projects, .pf-certs, .pf-skills { grid-template-columns: 1fr; }
+    }
+
+    /* ===== Motion & effects ============================================= */
+    /* Layout: commit history column + content */
+    .pf-layout { max-width: 1290px; display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 30px; }
+    .pf-content { min-width: 0; }
+
+    /* Git-style commit history (sticky left column) */
+    .pf-git {
+      position: sticky; top: 96px; align-self: start;
+      font-family: var(--font-mono); font-size: 0.78rem;
+    }
+    .pf-git-title { color: var(--muted); opacity: .7; margin: 4px 0 12px 1px; }
+    .pf-git ol { position: relative; list-style: none; margin: 0; padding: 0; }
+    .pf-git ol::before, .pf-git li.pf-git-fill {
+      content: ""; position: absolute; left: 5px; width: 2px; border-radius: 2px; top: var(--g0, 0px);
+    }
+    .pf-git ol::before { height: var(--gh, 0px); background: var(--border); }
+    .pf-git li.pf-git-fill { height: 0; background: linear-gradient(var(--success), var(--warning)); transition: height .15s linear; }
+    .pf-git li { position: relative; }
+    .pf-git a {
+      display: grid; grid-template-columns: 12px 1fr; column-gap: 10px; align-items: center; padding: 7px 0;
+      color: var(--muted) !important; text-decoration: none !important;
+    }
+    .pf-git .pf-dot {
+      position: relative; z-index: 1; width: 12px; height: 12px; border-radius: 50%;
+      background: var(--bg); border: 2px solid var(--border); transition: all .25s;
+    }
+    .pf-git .pf-merge .pf-dot { box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--border); }
+    .pf-git .pf-hash { color: var(--muted); transition: color .2s; }
+    .pf-git a:hover .pf-hash { color: var(--text); }
+    .pf-git a.done .pf-dot { border-color: var(--success); background: var(--success); }
+    .pf-git a.done .pf-hash { color: var(--success); }
+    .pf-git a.on .pf-dot { border-color: var(--warning); background: var(--warning); box-shadow: 0 0 0 4px rgba(215,153,33,.18); }
+    .pf-git .pf-merge a.on .pf-dot { box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--warning); }
+    .pf-git a.on .pf-hash { color: var(--warning); font-weight: 600; }
+    /* the commit message shows under the current commit only */
+    .pf-git .pf-msg {
+      grid-column: 2; max-height: 0; overflow: hidden; opacity: 0;
+      font-size: 0.66rem; line-height: 1.35; color: var(--muted);
+      transition: max-height .3s ease, opacity .3s ease, margin .3s ease;
+    }
+    .pf-git a.on .pf-msg { max-height: 3em; opacity: 1; margin-top: 3px; }
+    .pf-git .pf-head {
+      font-size: 0.58rem; color: var(--bg-alt); background: var(--warning); border-radius: 3px; padding: 0 4px; margin-left: 2px;
+    }
+
+    /* Small screens: hide the commit column, use the section buttons instead */
+    @media (max-width: 899px) {
+      .pf-layout { display: block; }
+      .pf-git { display: none; }
+    }
+    @media (min-width: 900px) {
+      .pf-toc { display: none; }
+      .pf-panel { scroll-margin-top: 76px; }
+    }
+    .pf-git-hint { margin: 16px 0 0; font-size: 0.64rem; color: var(--muted); opacity: .75; line-height: 1.8; }
+    .pf-git-hint kbd {
+      font-family: var(--font-mono); font-size: 0.62rem; color: var(--text);
+      border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 4px; background: var(--bg-soft);
+    }
+    /* brief highlight on the section you jumped to */
+    .pf-panel { transition: border-color .4s ease, box-shadow .4s ease; }
+    .pf-panel.pf-flash { border-color: var(--warning); box-shadow: 0 0 0 3px rgba(215,153,33,.12); }
+
+    /* Hero: typing prompt */
+    .pf-caret { color: var(--success); margin-left: 2px; animation: pf-blink 1s steps(1) infinite; }
+    @keyframes pf-blink { 50% { opacity: 0; } }
+    .pf-avatar { transition: transform .4s ease, box-shadow .4s ease; }
+    .pf-avatar:hover { transform: scale(1.04) rotate(-2deg); box-shadow: 0 0 0 1px var(--border), 0 0 28px rgba(215,153,33,.25); }
+
+    /* Hero entrance */
+    .js .pf-hero-panel .pf-avatar, .js .pf-hero-panel .pf-name, .js .pf-hero-panel .pf-role, .js .pf-hero-panel .pf-actions {
+      animation: pf-rise .7s cubic-bezier(.2,.7,.2,1) both;
+    }
+    .js .pf-hero-panel .pf-name { animation-delay: .15s; }
+    .js .pf-hero-panel .pf-role { animation-delay: .25s; }
+    .js .pf-hero-panel .pf-actions { animation-delay: .35s; }
+    @keyframes pf-rise { from { opacity: 0; transform: translateY(14px); } }
+
+    /* Section nav: sliding pill */
+    .pf-toc { position: sticky; }
+    .pf-toc a { position: relative; z-index: 1; background: transparent; }
+    .pf-toc a.on { background: transparent; color: var(--bg-alt) !important; border-color: transparent; }
+    .pf-toc-pill {
+      position: absolute; top: 10px; height: 0; border-radius: 999px; background: var(--text);
+      transition: left .35s cubic-bezier(.2,.7,.2,1), width .35s cubic-bezier(.2,.7,.2,1), opacity .2s; opacity: 0;
+    }
+
+    /* Staggered children: each card arrives slightly after the previous */
+    .js .pf-stagger > * { opacity: 0; transform: translateY(16px); transition: opacity .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+    .js .pf-stagger.seen > * { opacity: 1; transform: none; }
+
+    /* Timeline line draws itself */
+    .pf-timeline { border-left-color: transparent; }
+    .pf-timeline::before {
+      content: ""; position: absolute; left: -2px; top: 0; bottom: 0; width: 2px; background: var(--border);
+      transform-origin: top; transform: scaleY(0); transition: transform 1.1s cubic-bezier(.2,.7,.2,1) .15s;
+    }
+    .seen .pf-timeline::before, html:not(.js) .pf-timeline::before { transform: scaleY(1); }
+    .pf-tl-item.now::before { box-shadow: 0 0 0 0 rgba(152,151,26,.6); animation: pf-pulse 2.2s infinite; }
+    @keyframes pf-pulse { 70% { box-shadow: 0 0 0 9px rgba(152,151,26,0); } 100% { box-shadow: 0 0 0 0 rgba(152,151,26,0); } }
+
+    /* Cursor spotlight on cards */
+    .pf-spot { position: relative; overflow: hidden; }
+    .pf-spot::after {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
+      background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(235,219,178,.09), transparent 60%);
+    }
+    .pf-spot:hover::after { opacity: 1; }
+
+    /* 3D tilt on certificates */
+    .pf-certs { perspective: 900px; }
+    .pf-cert { transform-style: preserve-3d; will-change: transform; }
+    .pf-cert .pf-cert-img { transition: transform .3s ease; }
+    .pf-cert:hover .pf-cert-img { transform: translateZ(28px) scale(1.04); }
+
+    /* Gallery: slow zoom on the main image, progress bar on the active thumbnail */
+    .pf-gallery-main img:not(.contain) { animation: pf-kenburns 9s ease-in-out infinite alternate; }
+    @keyframes pf-kenburns { from { transform: scale(1); } to { transform: scale(1.07); } }
+    .pf-thumbs button { position: relative; }
+    .pf-thumbs button::after {
+      content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 100%;
+      background: var(--warning); transform-origin: left; transform: scaleX(0);
+    }
+    .pf-gallery.playing .pf-thumbs button.on::after { animation: pf-fill var(--pf-slide, 5s) linear forwards; }
+    .pf-gallery.paused .pf-thumbs button.on::after { animation-play-state: paused; }
+    @keyframes pf-fill { to { transform: scaleX(1); } }
+
+    /* Project cards: image zooms, arrow slides */
+    .pf-proj-img img { transition: transform .5s cubic-bezier(.2,.7,.2,1); }
+    .pf-proj:hover .pf-proj-img img { transform: scale(1.06); }
+    .pf-more { transition: letter-spacing .25s; }
+    .pf-proj:hover .pf-more { letter-spacing: .06em; }
+
+    /* Lightbox: fade and scale in */
+    .pf-lightbox { display: flex; opacity: 0; visibility: hidden; transition: opacity .25s, visibility .25s; }
+    .pf-lightbox.open { opacity: 1; visibility: visible; }
+    .pf-lightbox img { transform: scale(.94); transition: transform .3s cubic-bezier(.2,.7,.2,1); }
+    .pf-lightbox.open img { transform: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .pf-caret, .pf-gallery-main img, .pf-tl-item.now::before,
+      .js .pf-hero-panel .pf-avatar, .js .pf-hero-panel .pf-name, .js .pf-hero-panel .pf-role, .js .pf-hero-panel .pf-actions { animation: none !important; }
+      .js .pf-stagger > * { opacity: 1; transform: none; transition: none; }
+      .pf-timeline::before { transform: scaleY(1); transition: none; }
+      .pf-git li.pf-git-fill { transition: none; }
+    }
+  </style>
+</head>
+<body data-page="portfolio">
+  <header class="site-header">
+    <div class="nav-container">
+      <div class="brand"></div>
+      <button class="nav-toggle" aria-label="Toggle navigation">
+        <span></span><span></span><span></span>
+      </button>
+      <nav class="nav-links">
+        <a href="index.html">~/home</a>
+        <a href="portfolio.html" class="active">~/portfolio</a>
+        <a href="blogs.html">~/blogs</a>
+        <a href="projects.html">~/projects</a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="page-container pf pf-layout">
+    <aside class="pf-git" aria-label="Page sections as a commit history">
+      <p class="pf-git-title">git log</p>
+      <ol>
+        <li class="pf-git-fill" aria-hidden="true"></li>
+        <li><a href="#top"><span class="pf-dot"></span><span class="pf-hash">whoami</span><span class="pf-msg">init: whoami <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#education"><span class="pf-dot"></span><span class="pf-hash">education</span><span class="pf-msg">feat: education <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#certifications"><span class="pf-dot"></span><span class="pf-hash">certs</span><span class="pf-msg">feat: add certifications <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#awards"><span class="pf-dot"></span><span class="pf-hash">awards</span><span class="pf-msg">feat: add awards <span class="pf-head">HEAD</span></span></a></li>
+        <li class="pf-merge"><a href="#competitions"><span class="pf-dot"></span><span class="pf-hash">hackathons</span><span class="pf-msg">merge: branch 'hackathons' <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#projects"><span class="pf-dot"></span><span class="pf-hash">projects</span><span class="pf-msg">feat: selected projects <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#cca"><span class="pf-dot"></span><span class="pf-hash">cca</span><span class="pf-msg">feat: ITSIG workshops <span class="pf-head">HEAD</span></span></a></li>
+        <li><a href="#skills"><span class="pf-dot"></span><span class="pf-hash">skills</span><span class="pf-msg">chore: skills <span class="pf-head">HEAD</span></span></a></li>
+      </ol>
+      <p class="pf-git-hint"><kbd>↑</kbd> <kbd>↓</kbd> move between sections</p>
+    </aside>
+    <div class="pf-content">
+
+    <!-- Hero -->
+    <section class="pf-panel pf-hero-panel" id="top">
+      <div class="pf-hero">
+        <div class="pf-avatar"><img src="images/profile.jpg" alt="Thiha Htoo Zin" /></div>
+        <div>
+          <p class="pf-eyebrow"><span class="pf-type" data-text="$ whoami">$ whoami</span><span class="pf-caret">▍</span></p>
+          <h1 class="pf-name">Thiha Htoo Zin</h1>
+          <p class="pf-role">Year 2 Diploma in Information Technology student at Temasek Polytechnic · Aspiring Infrastructure &amp; DevOps Engineer</p>
+          <div class="pf-actions">
+            <a class="pf-btn" href="mailto:thihahtoozinn@gmail.com">✉ Email</a>
+            <a class="pf-btn" href="https://linkedin.com/in/thihahtoozin">in LinkedIn</a>
+            <a class="pf-btn" href="https://github.com/fyodor-eul">⌥ GitHub</a>
+          </div>
+        </div>
+      </div>
+      <div class="pf-stats pf-stagger">
+        <div class="pf-stat"><b data-count="3.97">3.97</b><span>cGPA</span></div>
+        <div class="pf-stat"><b>RHCSA</b><span>Red Hat certified</span></div>
+        <div class="pf-stat"><b data-count="2" data-suffix="×">2×</b><span>Hackathon finalist</span></div>
+        <div class="pf-stat"><b>TP</b><span>Scholarship recipient</span></div>
+      </div>
+    </section>
+
+    <!-- Section nav -->
+    <nav class="pf-toc" aria-label="Portfolio sections">
+      <span class="pf-toc-pill" aria-hidden="true"></span>
+      <a href="#education">Education</a>
+      <a href="#certifications">Certifications</a>
+      <a href="#awards">Awards</a>
+      <a href="#competitions">Competitions</a>
+      <a href="#projects">Projects</a>
+      <a href="#cca">CCA</a>
+      <a href="#skills">Skills</a>
+    </nav>
+
+    <!-- 01 Education -->
+    <section class="pf-panel pf-reveal" id="education">
+      <h2 class="pf-h2"><span class="pf-num">01</span> Education</h2>
+      <div class="pf-timeline">
+        <div class="pf-tl-item now">
+          <div class="pf-tl-head"><h3>Diploma in Information Technology</h3><span class="pf-when">Apr 2025 – May 2028</span></div>
+          <p>Temasek Polytechnic · cGPA 3.97 / 4.00 · Director's List</p>
+          <div class="pf-modules pf-stagger">
+            <span class="pf-tag">Network and Cloud Technology</span>
+            <span class="pf-tag">Cyber Security Fundamentals</span>
+            <span class="pf-tag">Cloud Application Development</span>
+          </div>
+        </div>
+        <div class="pf-tl-item">
+          <div class="pf-tl-head"><h3>Mechanical Engineering (Bachelor's Programme)</h3><span class="pf-when">2019 – 2025</span></div>
+          <p>Yangon Technological University · Completed Years 1–3, then switched to IT to follow my interest in systems and networks</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 02 Certifications -->
+    <section class="pf-panel pf-reveal" id="certifications">
+      <h2 class="pf-h2"><span class="pf-num">02</span> Certifications</h2>
+      <div class="pf-certs pf-stagger">
+        <div class="pf-cert pf-spot">
+          <div class="pf-cert-img"><img class="pf-zoom" src="images/portfolio/rhcsa.png" alt="Red Hat Certified System Administrator badge" /></div>
+          <h3>Red Hat Certified System Administrator (RHCSA)</h3>
+          <p>Red Hat · April 2026</p>
+          <a class="pf-verify" href="https://www.credly.com/badges/67bc5f46-abc0-401e-a9f2-2a00cdf493f6" target="_blank" rel="noopener">Verify on Credly ↗</a>
+        </div>
+        <div class="pf-cert pf-spot">
+          <div class="pf-cert-img"><img class="pf-zoom" src="images/portfolio/isc2-cc.jpg" alt="ISC2 CC validation of completion" /></div>
+          <h3>ISC2 Certified in Cybersecurity (CC)</h3>
+          <p>ISC2</p>
+        </div>
+        <div class="pf-cert pf-spot">
+          <div class="pf-cert-img"><img class="pf-zoom" src="images/portfolio/lfs101.png" alt="LFS101 Introduction to Linux badge" /></div>
+          <h3>LFS101: Introduction to Linux</h3>
+          <p>The Linux Foundation · 2025</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 03 Awards -->
+    <section class="pf-panel pf-reveal" id="awards">
+      <h2 class="pf-h2"><span class="pf-num">03</span> Awards</h2>
+      <div class="pf-awards pf-stagger">
+        <div class="pf-award pf-spot">
+          <div class="pf-award-media"><img class="pf-zoom" src="images/portfolio/tp-scholarship-stage.jpg" alt="Receiving the Temasek Polytechnic Scholarship on stage" /></div>
+          <div class="pf-award-body">
+            <h3>Temasek Polytechnic Scholarship</h3>
+            <p>Presented 27 January 2026 · For outstanding academic results, CCA achievements and leadership potential</p>
+          </div>
+        </div>
+        <div class="pf-award-stack">
+          <div class="pf-award pf-award-photo pf-spot">
+            <div class="pf-award-media"><img class="pf-zoom" src="images/portfolio/tp-scholarship.jpg" alt="Holding the scholarship award" style="object-position: center 40%" /></div>
+          </div>
+          <div class="pf-award pf-spot">
+            <div class="pf-award-body">
+              <h3>★ Director's List</h3>
+              <p>Temasek Polytechnic · 2025 · For outstanding academic performance</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 04 Competitions -->
+    <section class="pf-panel pf-reveal" id="competitions">
+      <h2 class="pf-h2"><span class="pf-num">04</span> Competitions</h2>
+
+      <!-- OCBC Sense -->
+      <article class="pf-feature">
+        <div class="pf-gallery">
+          <div class="pf-gallery-main">
+            <img class="pf-zoom" src="images/portfolio/ocbc-ignite-team.jpg" alt="Team OCBC Sense at OCBC Ignite Innovation Challenge 2026" />
+            <div class="pf-cap">Our team at the OCBC Ignite Innovation Challenge 2026</div>
+          </div>
+          <div class="pf-thumbs pf-stagger">
+            <button class="on" data-src="images/portfolio/ocbc-ignite-team.jpg" data-cap="Our team at the OCBC Ignite Innovation Challenge 2026"><img src="images/portfolio/ocbc-ignite-team.jpg" alt="" /></button>
+            <button data-src="images/portfolio/ocbc-sense-cover.jpg" data-cap="OCBC Sense: Ask, Don't Assume"><img src="images/portfolio/ocbc-sense-cover.jpg" alt="" /></button>
+            <button data-src="images/portfolio/ocbc-sense-overview.jpg" data-cap="What OCBC Sense does for customers, staff and designers"><img src="images/portfolio/ocbc-sense-overview.jpg" alt="" /></button>
+            <button data-src="images/portfolio/ocbc-sense-architecture.jpg" data-cap="System architecture: the backend and Docker setup I built"><img src="images/portfolio/ocbc-sense-architecture.jpg" alt="" /></button>
+          </div>
+        </div>
+        <div>
+          <span class="pf-when">2026</span>
+          <h3>OCBC Sense</h3>
+          <p class="pf-event">OCBC Ignite Innovation Challenge · Adaptive Banking</p>
+          <div class="pf-meta"><span><b>Team</b> 5 members</span><span><b>Role</b> Backend</span><span><b>Result</b> Finalist</span></div>
+          <ul>
+            <li>A digital banking assistant that notices when an applicant is struggling and offers help from an AI assistant or a real staff member</li>
+            <li>Our survey of 71 people found 90% had experienced difficulties with digital banking</li>
+            <li><b>My part:</b> built the backend, ran the whole system in Docker with one command, and connected the AI service and staff dashboard</li>
+          </ul>
+          <p class="pf-quote"><b>"The AI can fail; the journey can't."</b> If the AI is slow or down, customers can still finish and reach a person.</p>
+          <div class="pf-tags"><span class="pf-tag skill">Collaboration</span><span class="pf-tag skill">Problem-solving</span><span class="pf-tag">Docker</span><span class="pf-tag">Node.js</span></div>
+        </div>
+      </article>
+
+      <!-- RouteRight -->
+      <article class="pf-feature flip">
+        <div class="pf-gallery">
+          <div class="pf-gallery-main">
+            <img class="pf-zoom" src="images/portfolio/aignition-team.jpg" alt="Team 26 at AI-Gnition hackathon" />
+            <div class="pf-cap">Team 26 at AI-Gnition, 15 November 2025</div>
+          </div>
+          <div class="pf-thumbs pf-stagger">
+            <button class="on" data-src="images/portfolio/aignition-team.jpg" data-cap="Team 26 at AI-Gnition, 15 November 2025"><img src="images/portfolio/aignition-team.jpg" alt="" /></button>
+            <button data-src="images/routeright/dashboard.png" data-cap="RouteRight: email inbox view" data-fit="contain"><img src="images/routeright/dashboard.png" alt="" /></button>
+            <button data-src="images/routeright/sla.png" data-cap="RouteRight: SLA tracking dashboard" data-fit="contain"><img src="images/routeright/sla.png" alt="" /></button>
+            <button data-src="images/portfolio/aignition-banner.jpg" data-cap="AI-Gnition: Singapore's First AI Agent Hackathon"><img src="images/portfolio/aignition-banner.jpg" alt="" /></button>
+          </div>
+        </div>
+        <div>
+          <span class="pf-when">15 Nov 2025</span>
+          <h3>Ai-Gnition: RouteRight</h3>
+          <p class="pf-event">AI-Gnition: Singapore's First AI Agent Hackathon · SIM, Nexius Labs, Asia AI Association</p>
+          <div class="pf-meta"><span><b>Team</b> 26</span><span><b>Role</b> Developer &amp; presenter</span><span><b>Result</b> Finalist</span></div>
+          <ul>
+            <li>An AI agent that sorts incoming emails by type (billing, bug reports, feature requests, abuse reports) and forwards each to the right team</li>
+            <li>A live dashboard tracks response times against service-level targets (SLA)</li>
+            <li><b>My part:</b> built the n8n AI workflows, the React dashboard and the Gmail and Supabase backend, and pitched the project to the judges</li>
+          </ul>
+          <div class="pf-tags"><span class="pf-tag skill">Teamwork</span><span class="pf-tag">Automation</span><span class="pf-tag">n8n</span><span class="pf-tag">Gmail API</span></div>
+          <p style="margin:12px 0 0;font-size:0.88rem"><a href="project-viewer.html?file=RouteRight.md">View project →</a></p>
+        </div>
+      </article>
+    </section>
+
+    <!-- 05 Projects -->
+    <section class="pf-panel pf-reveal" id="projects">
+      <h2 class="pf-h2"><span class="pf-num">05</span> Selected Projects</h2>
+      <div class="pf-projects pf-stagger">
+        <a class="pf-proj pf-spot" href="project-viewer.html?file=KVMHomeServer.md">
+          <div class="pf-proj-img"><img src="images/projects/KVMHomeServer/system_overview.png" alt="" /></div>
+          <div class="pf-proj-body">
+            <span class="pf-proj-kind">Personal project</span>
+            <h3>KVM Home Server</h3>
+            <p>A home lab of Linux virtual machines, managed remotely and used for RHCE practice.</p>
+            <span class="pf-more">View project →</span>
+          </div>
+        </a>
+        <a class="pf-proj pf-spot" href="project-viewer.html?file=MinecraftServerSetupNeoForge.md">
+          <div class="pf-proj-img"><img src="images/projects/mc-server/cover.png" alt="" /></div>
+          <div class="pf-proj-body">
+            <span class="pf-proj-kind">Personal project</span>
+            <h3>Self-Hosted Game Server</h3>
+            <p>A live Linux server for a group of players, with auto-restart and automated backups.</p>
+            <span class="pf-more">View project →</span>
+          </div>
+        </a>
+        <a class="pf-proj pf-spot" href="project-viewer.html?file=Starbuzz.md">
+          <div class="pf-proj-img"><img src="images/projects/Starbuzz/cover.png" alt="" /></div>
+          <div class="pf-proj-body">
+            <span class="pf-proj-kind">School project</span>
+            <h3>StarBuzz</h3>
+            <p>A café ordering system built on AWS cloud services.</p>
+            <span class="pf-more">View project →</span>
+          </div>
+        </a>
+      </div>
+      <p style="margin:16px 0 0;font-size:0.88rem"><a href="projects.html">All projects →</a></p>
+    </section>
+
+    <!-- 06 CCA -->
+    <section class="pf-panel pf-reveal" id="cca">
+      <h2 class="pf-h2"><span class="pf-num">06</span> Co-Curricular Activities</h2>
+      <div class="pf-cca">
+        <figure style="margin:0">
+          <div class="pf-cca-img"><img class="pf-zoom" src="images/portfolio/itsig-git-workshop.jpg" alt="Presenting the ITSIG Git workshop" /></div>
+          <figcaption class="pf-figure-cap">Presenting the ITSIG Git workshop</figcaption>
+        </figure>
+        <div>
+          <span class="pf-when">2026 – Present</span>
+          <h3>Technical Consultant</h3>
+          <p class="pf-event">IT Student Interest Group (ITSIG), Temasek Polytechnic</p>
+          <ul>
+            <li>Planned and delivered hands-on technical workshops for fellow students, including Git and JavaScript</li>
+            <li>Coordinated workshop content and logistics with fellow committee members</li>
+            <li>Prepared step-by-step slides and live demos so beginners could follow along on their own laptops</li>
+          </ul>
+          <div class="pf-tags"><span class="pf-tag skill">Communication</span><span class="pf-tag skill">Collaboration</span><span class="pf-tag">Git</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 07 Skills -->
+    <section class="pf-panel pf-reveal" id="skills">
+      <h2 class="pf-h2"><span class="pf-num">07</span> Skills</h2>
+      <div class="pf-skills pf-stagger">
+        <div class="pf-skillbox pf-spot">
+          <h3>Technical</h3>
+          <ul>
+            <li><b>Linux</b> administration and virtualisation (RHCSA)</li>
+            <li><b>Networking</b> fundamentals: OSI, TCP/IP, DNS</li>
+            <li><b>Cloud</b> services on AWS</li>
+            <li><b>Security</b> fundamentals (ISC2 CC)</li>
+            <li><b>Automation</b> with Bash, C and JavaScript; Docker</li>
+          </ul>
+        </div>
+        <div class="pf-skillbox pf-spot">
+          <h3>Generic</h3>
+          <ul>
+            <li><b>Communication</b>: technical workshops and project documentation</li>
+            <li><b>Problem-solving</b>: methodical troubleshooting of cloud and Linux issues</li>
+            <li><b>Collaboration</b>: finalist in two team hackathons; ITSIG committee</li>
+            <li><b>Quick, independent learner</b>: self-studied for industry certifications</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+    </div>
+  </main>
+
+  <!-- Lightbox -->
+  <div class="pf-lightbox" id="pf-lightbox" role="dialog" aria-modal="true" aria-label="Image preview">
+    <img alt="" /><p></p>
+  </div>
+
+  <script src="js/markdown.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+  (() => {
+    // Gallery: clicking a thumbnail swaps the main image
+    document.querySelectorAll(".pf-gallery").forEach(g => {
+      const main = g.querySelector(".pf-gallery-main img");
+      const cap = g.querySelector(".pf-cap");
+      g.querySelectorAll(".pf-thumbs button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          g.querySelectorAll(".pf-thumbs button").forEach(b => b.classList.remove("on"));
+          btn.classList.add("on");
+          main.style.opacity = 0;
+          setTimeout(() => {
+            main.src = btn.dataset.src;
+            main.classList.toggle("contain", btn.dataset.fit === "contain");
+            if (cap) cap.textContent = btn.dataset.cap || "";
+            main.alt = btn.dataset.cap || "";
+            main.style.opacity = 1;
+          }, 150);
+        });
+      });
+    });
+
+    // Lightbox: click any zoomable image to enlarge, Esc or click to close
+    const lb = document.getElementById("pf-lightbox");
+    const lbImg = lb.querySelector("img"), lbCap = lb.querySelector("p");
+    document.addEventListener("click", e => {
+      const img = e.target.closest(".pf-zoom");
+      if (img) {
+        lbImg.src = img.currentSrc || img.src;
+        lbCap.textContent = img.closest(".pf-gallery")?.querySelector(".pf-cap")?.textContent || img.alt;
+        lb.classList.add("open");
+      } else if (e.target.closest("#pf-lightbox")) {
+        lb.classList.remove("open");
+      }
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") lb.classList.remove("open"); });
+
+    // Reveal sections as they scroll into view
+    const reveal = new IntersectionObserver(entries => {
+      entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add("seen"); reveal.unobserve(en.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll(".pf-reveal").forEach(el => reveal.observe(el));
+
+    // Section nav: highlight the section in view
+    const links = [...document.querySelectorAll(".pf-toc a")];
+    const spy = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (en.isIntersecting) {
+          links.forEach(a => a.classList.toggle("on", a.getAttribute("href") === "#" + en.target.id));
+        }
+      });
+    }, { rootMargin: "-45% 0px -50% 0px" });
+    links.forEach(a => { const s = document.querySelector(a.getAttribute("href")); if (s) spy.observe(s); });
+    // No highlight while the header card is in view
+    new IntersectionObserver(([en]) => { if (en.isIntersecting) links.forEach(a => a.classList.remove("on")); },
+      { rootMargin: "-45% 0px -50% 0px" }).observe(document.getElementById("top"));
+
+
+    const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // Git commit rail: the line fills as you scroll; passed commits turn green, the current one is HEAD
+    const gitLinks = [...document.querySelectorAll(".pf-git a")];
+    const gitFill = document.querySelector(".pf-git-fill");
+    const gitSections = gitLinks.map(a => document.querySelector(a.getAttribute("href")));
+    const onScroll = () => {
+      const mark = scrollY + innerHeight * 0.45;
+      let cur = 0;
+      gitSections.forEach((sec, i) => { if (sec && sec.getBoundingClientRect().top + scrollY <= mark) cur = i; });
+      if (scrollY + innerHeight >= document.documentElement.scrollHeight - 4) cur = gitSections.length - 1;
+      gitLinks.forEach((a, i) => { a.classList.toggle("on", i === cur); a.classList.toggle("done", i < cur); });
+      const c = gitLinks.map(a => a.parentElement.offsetTop + a.parentElement.offsetHeight / 2);
+      const ol = gitFill.parentElement;
+      ol.style.setProperty("--g0", c[0] + "px"); ol.style.setProperty("--gh", (c[c.length - 1] - c[0]) + "px");
+      const sec0 = gitSections[cur], sec1 = gitSections[cur + 1];
+      let frac = 0;
+      if (sec1) {
+        const t0 = sec0.getBoundingClientRect().top + scrollY, t1 = sec1.getBoundingClientRect().top + scrollY;
+        frac = Math.min(Math.max((mark - t0) / (t1 - t0), 0), 1);
+      }
+      gitFill.style.height = (c[cur] + (sec1 ? (c[cur + 1] - c[cur]) * frac : 0) - c[0]) + "px";
+    };
+    addEventListener("scroll", onScroll, { passive: true }); addEventListener("resize", onScroll); onScroll();
+
+    // Typing prompt in the header
+    const typeEl = document.querySelector(".pf-type");
+    if (typeEl && !reduceMotion) {
+      const text = typeEl.dataset.text; typeEl.textContent = "";
+      [...text].forEach((ch, i) => setTimeout(() => { typeEl.textContent += ch; }, 300 + i * 85));
+    }
+
+    // Staggered reveal for card groups
+    const stag = new IntersectionObserver(entries => {
+      entries.forEach(en => {
+        if (!en.isIntersecting) return;
+        [...en.target.children].forEach((c, i) => { c.style.transitionDelay = (i * 90) + "ms"; });
+        en.target.classList.add("seen"); stag.unobserve(en.target);
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll(".pf-stagger").forEach(el => stag.observe(el));
+
+    // Cursor spotlight + gentle tilt on certificates
+    document.querySelectorAll(".pf-spot").forEach(card => {
+      card.addEventListener("pointermove", e => {
+        const r = card.getBoundingClientRect();
+        const x = e.clientX - r.left, y = e.clientY - r.top;
+        card.style.setProperty("--mx", x + "px"); card.style.setProperty("--my", y + "px");
+        if (!reduceMotion && card.classList.contains("pf-cert")) {
+          const rx = ((y / r.height) - .5) * -10, ry = ((x / r.width) - .5) * 12;
+          card.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg) translateY(-3px)`;
+        }
+      });
+      card.addEventListener("pointerleave", () => { card.style.transform = ""; });
+    });
+
+    // Gallery autoplay: advances every 5 s while in view; pauses on hover
+    document.querySelectorAll(".pf-gallery").forEach(g => {
+      if (reduceMotion) return;
+      const btns = [...g.querySelectorAll(".pf-thumbs button")];
+      let timer = null, visible = false, hover = false;
+      const next = () => {
+        const i = btns.findIndex(b => b.classList.contains("on"));
+        btns[(i + 1) % btns.length].click();
+      };
+      const restart = () => {
+        clearTimeout(timer);
+        g.classList.remove("playing"); void g.offsetWidth;
+        if (visible && !hover && !lb.classList.contains("open")) { g.classList.add("playing"); timer = setTimeout(next, 5000); }
+      };
+      btns.forEach(b => b.addEventListener("click", () => setTimeout(restart, 0)));
+      g.addEventListener("pointerenter", () => { hover = true; g.classList.add("paused"); clearTimeout(timer); });
+      g.addEventListener("pointerleave", () => { hover = false; g.classList.remove("paused"); restart(); });
+      new IntersectionObserver(([en]) => { visible = en.isIntersecting; restart(); }, { threshold: 0.4 }).observe(g);
+    });
+
+    // Section nav: sliding pill follows the active section
+    const toc = document.querySelector(".pf-toc"), pill = toc.querySelector(".pf-toc-pill");
+    const movePill = () => {
+      const on = toc.querySelector("a.on");
+      if (!on) { pill.style.opacity = 0; return; }
+      pill.style.opacity = 1;
+      pill.style.left = on.offsetLeft + "px"; pill.style.width = on.offsetWidth + "px";
+      pill.style.top = on.offsetTop + "px"; pill.style.height = on.offsetHeight + "px";
+      if (on.offsetLeft < toc.scrollLeft || on.offsetLeft + on.offsetWidth > toc.scrollLeft + toc.clientWidth)
+        toc.scrollTo({ left: on.offsetLeft - 16, behavior: "smooth" });
+    };
+    new MutationObserver(movePill).observe(toc, { subtree: true, attributes: true, attributeFilter: ["class"] });
+    addEventListener("resize", movePill);
+
+    // Keyboard: ↑ / ↓ jump to the previous / next section
+    const jumpSections = gitSections.filter(Boolean);
+    const jump = dir => {
+      const offset = innerWidth >= 900 ? 76 : 130;
+      const tops = jumpSections.map(sec => sec.getBoundingClientRect().top - offset);
+      let target;
+      if (dir > 0) target = jumpSections[tops.findIndex(t => t > 20)];
+      else { const i = tops.map(t => t < -20).lastIndexOf(true); target = jumpSections[i]; }
+      if (!target) return;
+      target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      target.classList.add("pf-flash"); setTimeout(() => target.classList.remove("pf-flash"), 700);
+    };
+    document.addEventListener("keydown", e => {
+      if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+      if (lb.classList.contains("open")) return;
+      if (e.key === "ArrowDown") { e.preventDefault(); jump(1); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); jump(-1); }
+    });
+
+    // Count up the key figures once
+    if (!reduceMotion) {
+      document.querySelectorAll("[data-count]").forEach(el => {
+        const end = parseFloat(el.dataset.count), dec = (el.dataset.count.split(".")[1] || "").length;
+        const suffix = el.dataset.suffix || "", t0 = performance.now(), dur = 900;
+        const tick = now => {
+          const p = Math.min((now - t0) / dur, 1), v = end * (1 - Math.pow(1 - p, 3));
+          el.textContent = v.toFixed(dec) + (p === 1 ? suffix : "");
+          if (p < 1) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+      });
+    }
+  })();
+  </script>
+</body>
+</html>
